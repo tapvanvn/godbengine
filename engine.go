@@ -6,6 +6,7 @@ import (
 
 var uniqueEngine *engine.Engine = nil
 
+//InitEngineFunc init engine function
 var InitEngineFunc func(*engine.Engine) = nil
 
 //GetEngine engine
@@ -17,7 +18,7 @@ func GetEngine() *engine.Engine {
 
 		if InitEngineFunc != nil {
 
-			InitEngineFunc(uniqueEngine)
+			InitEngineFunc(testEngine)
 		}
 
 		uniqueEngine = testEngine
