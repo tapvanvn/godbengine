@@ -298,6 +298,17 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 				"$lt": filterItem.Value,
 			}
+		} else if filterItem.Operator == "like" {
+
+			/*filter[filterItem.Field] = bson.M{
+
+				"$regex": filterItem.Value,
+			}*/
+			filter[filterItem.Field] = bson.M{
+				"$text": bson.M{
+					"$search": filterItem.Value,
+				},
+			}
 		}
 	}
 
