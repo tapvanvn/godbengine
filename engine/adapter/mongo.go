@@ -70,6 +70,7 @@ type MongoQueryResult struct {
 	SingleResult *mongo.SingleResult
 	Ctx          context.Context
 	isAvailable  bool
+	Total        int64
 }
 
 //Close close
@@ -322,7 +323,11 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 	} else {
 
 		opts := options.Find().SetProjection(bson.M{"_id": 0})
+		total, err := col.CountDocuments(ctx, filter, options.Count())
+		if err != nil {
 
+			fmt.Println(err.Error())
+		}
 		result, err := col.Find(ctx, filter, opts)
 		if err != nil {
 
@@ -334,6 +339,7 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 		queryResult.Err = err
 		queryResult.Cursor = result
 		queryResult.isAvailable = true
+		queryResult.Total = total
 
 	}
 
