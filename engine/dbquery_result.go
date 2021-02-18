@@ -7,4 +7,5 @@ type DBQueryResult interface {
 	GetOne(document interface{}) error
 	Close()
 	IsAvailable() bool
+	Count() int64
 }

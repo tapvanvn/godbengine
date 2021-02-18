@@ -110,6 +110,12 @@ func (result MongoQueryResult) Next(document interface{}) error {
 	return errors.New("select on cursor while requested single query")
 }
 
+//Count count total document
+func (result MongoQueryResult) Count() int64 {
+
+	return result.Total
+}
+
 //GetOne get single result document
 func (result MongoQueryResult) GetOne(document interface{}) error {
 
