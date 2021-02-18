@@ -330,9 +330,10 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 	} else {
 
 		opts := options.Find().SetProjection(bson.M{"_id": 0})
-		if query.paging.PageSize > 0 {
-			opts = opts.SetLimit(query.paging.PageSize)
-			opts = opts.SetSkip(query.paging.PageNum * query.paging.PageSize)
+		paging := query.GetPaging()
+		if paging.PageSize > 0 {
+			opts = opts.SetLimit(int64(paging.PageSize))
+			opts = opts.SetSkip(int64(paging.PageNum * paging.PageSize))
 		}
 		total, err := col.CountDocuments(ctx, filter, options.Count())
 		if err != nil {

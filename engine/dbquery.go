@@ -47,3 +47,9 @@ func (query *DBQuery) Paging(pageNum int, pageSize int) {
 
 	query.paging = &DBQueryPage{PageNum: pageNum, PageSize: pageSize}
 }
+
+//GetPaging get paging info
+func (query *DBQuery) GetPaging() *DBQueryPage {
+
+	return query.paging
+}
