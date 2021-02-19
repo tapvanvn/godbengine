@@ -9,6 +9,7 @@ import (
 
 	"github.com/tapvanvn/godbengine/engine"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -311,8 +312,11 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 				"$regex": filterItem.Value,
 			}*/
+			pattern := fmt.Sprintf("%v", filterItem.Value)
+
 			filter[filterItem.Field] = bson.M{
-				"$regex": filterItem.Value,
+
+				"$regex": primitive.Regex{Pattern: pattern},
 			}
 		}
 
