@@ -331,7 +331,7 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 		opts := options.Find().SetProjection(bson.M{"_id": 0})
 		paging := query.GetPaging()
-		if paging.PageSize > 0 {
+		if paging != nil && paging.PageSize > 0 {
 			opts = opts.SetLimit(int64(paging.PageSize))
 			opts = opts.SetSkip(int64(paging.PageNum * paging.PageSize))
 		}
