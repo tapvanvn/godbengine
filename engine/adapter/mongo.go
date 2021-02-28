@@ -310,7 +310,9 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 			}
 		} else if filterItem.Operator == "+=" {
 
-			filterA = append(filterA, currFilter)
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
 
 			filterA = append(filterA, bson.M{
 
@@ -331,10 +333,16 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 				"$regex": primitive.Regex{Pattern: pattern},
 			}
 		}
-		filterA = append(filterA, currFilter)
+		if len(currFilter) > 0 {
+			filterA = append(filterA, currFilter)
+		}
 	}
+	filter := bson.M{}
 
-	filter := bson.M{"$and": filterA}
+	if len(filterA) > 0 {
+
+		filter["$and"] = filterA
+	}
 
 	if query.SelectOne {
 
