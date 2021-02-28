@@ -324,6 +324,42 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 			currFilter = bson.M{}
 
+		} else if filterItem.Operator == "+<" {
+
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
+
+			filterA = append(filterA, bson.M{
+
+				"$or": bson.A{
+					bson.M{filterItem.Field: bson.M{"$exists": false}},
+					bson.M{filterItem.Field: bson.M{
+
+						"$lt": filterItem.Value,
+					}},
+				},
+			})
+
+			currFilter = bson.M{}
+		} else if filterItem.Operator == "+>" {
+
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
+
+			filterA = append(filterA, bson.M{
+
+				"$or": bson.A{
+					bson.M{filterItem.Field: bson.M{"$exists": false}},
+					bson.M{filterItem.Field: bson.M{
+
+						"$gt": filterItem.Value,
+					}},
+				},
+			})
+
+			currFilter = bson.M{}
 		} else if filterItem.Operator == "regex" {
 
 			pattern := fmt.Sprintf("%v", filterItem.Value)
