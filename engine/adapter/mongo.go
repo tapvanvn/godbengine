@@ -286,41 +286,55 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 		return queryResult
 	}
 
-	filter := bson.M{}
+	filterA := bson.A{}
+
+	currFilter := bson.M{}
 
 	for _, filterItem := range query.Fields {
 
 		if filterItem.Operator == "=" {
 
-			filter[filterItem.Field] = filterItem.Value
+			currFilter[filterItem.Field] = filterItem.Value
 
 		} else if filterItem.Operator == ">" {
 
-			filter[filterItem.Field] = bson.M{
+			currFilter[filterItem.Field] = bson.M{
 
 				"$gt": filterItem.Value,
 			}
 		} else if filterItem.Operator == "<" {
 
-			filter[filterItem.Field] = bson.M{
+			currFilter[filterItem.Field] = bson.M{
 
 				"$lt": filterItem.Value,
 			}
+		} else if filterItem.Operator == "+=" {
+
+			filterA = append(filterA, currFilter)
+
+			filterA = append(filterA, bson.M{
+
+				"$or": bson.A{
+					bson.M{filterItem.Field: bson.M{"$exists": false}},
+					bson.M{filterItem.Field: filterItem.Value},
+				},
+			})
+
+			currFilter = bson.M{}
+
 		} else if filterItem.Operator == "regex" {
 
-			/*filter[filterItem.Field] = bson.M{
-
-				"$regex": filterItem.Value,
-			}*/
 			pattern := fmt.Sprintf("%v", filterItem.Value)
 
-			filter[filterItem.Field] = bson.M{
+			currFilter[filterItem.Field] = bson.M{
 
 				"$regex": primitive.Regex{Pattern: pattern},
 			}
 		}
-
+		filterA = append(filterA, currFilter)
 	}
+
+	filter := bson.M{"$and": filterA}
 
 	if query.SelectOne {
 
