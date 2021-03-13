@@ -408,7 +408,7 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 			filterA = append(filterA, bson.M{
 
-				"$or": filterItem.Value,
+				"$in": filterItem.Value,
 			})
 
 			currFilter = bson.M{}
