@@ -308,10 +308,10 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 				filterA = append(filterA, currFilter)
 			}
 
-			filterA = append(filterA, bson.M{
+			filterA = append(filterA, bson.M{filterItem.Field: bson.M{
 
 				"$ne": filterItem.Value,
-			})
+			}})
 
 			currFilter = bson.M{}
 
@@ -321,10 +321,10 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 				filterA = append(filterA, currFilter)
 			}
 
-			filterA = append(filterA, bson.M{
+			filterA = append(filterA, bson.M{filterItem.Field: bson.M{
 
 				"$gt": filterItem.Value,
-			})
+			}})
 
 			currFilter = bson.M{}
 
@@ -334,10 +334,10 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 				filterA = append(filterA, currFilter)
 			}
 
-			filterA = append(filterA, bson.M{
+			filterA = append(filterA, bson.M{filterItem.Field: bson.M{
 
 				"$lt": filterItem.Value,
-			})
+			}})
 
 			currFilter = bson.M{}
 		} else if filterItem.Operator == "+=" {
