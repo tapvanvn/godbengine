@@ -294,20 +294,52 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 		if filterItem.Operator == "=" {
 
-			currFilter[filterItem.Field] = filterItem.Value
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
+
+			filterA = append(filterA, bson.M{filterItem.Field: filterItem.Value})
+
+			currFilter = bson.M{}
+
+		} else if filterItem.Operator == "!=" {
+
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
+
+			filterA = append(filterA, bson.M{
+
+				"$ne": filterItem.Value,
+			})
+
+			currFilter = bson.M{}
 
 		} else if filterItem.Operator == ">" {
 
-			currFilter[filterItem.Field] = bson.M{
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
+
+			filterA = append(filterA, bson.M{
 
 				"$gt": filterItem.Value,
-			}
+			})
+
+			currFilter = bson.M{}
+
 		} else if filterItem.Operator == "<" {
 
-			currFilter[filterItem.Field] = bson.M{
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
+
+			filterA = append(filterA, bson.M{
 
 				"$lt": filterItem.Value,
-			}
+			})
+
+			currFilter = bson.M{}
 		} else if filterItem.Operator == "+=" {
 
 			if len(currFilter) > 0 {
