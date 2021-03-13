@@ -345,6 +345,7 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 		} else if filterItem.Operator == "+>" {
 
 			if len(currFilter) > 0 {
+
 				filterA = append(filterA, currFilter)
 			}
 
@@ -368,6 +369,19 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 				"$regex": primitive.Regex{Pattern: pattern},
 			}
+		} else if filterItem.Operator == "in" {
+			if len(currFilter) > 0 {
+				filterA = append(filterA, currFilter)
+			}
+
+			arr := filterItem.Value.([]interface{})
+
+			filterA = append(filterA, bson.M{
+
+				"$or": arr,
+			})
+
+			currFilter = bson.M{}
 		}
 		if len(currFilter) > 0 {
 			filterA = append(filterA, currFilter)
