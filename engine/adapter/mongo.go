@@ -406,11 +406,9 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 				filterA = append(filterA, currFilter)
 			}
 
-			arr := filterItem.Value.([]interface{})
-
 			filterA = append(filterA, bson.M{
 
-				"$or": arr,
+				"$or": filterItem.Value,
 			})
 
 			currFilter = bson.M{}
