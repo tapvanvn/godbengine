@@ -30,7 +30,8 @@ type DBQueryPage struct {
 //MakeDBQuery make new dbquery
 func MakeDBQuery(collection string, selectOne bool) DBQuery {
 
-	query := DBQuery{Collection: collection, Fields: []dbFilterItem{}, SelectOne: selectOne}
+	query := DBQuery{Collection: collection,
+		Fields: []dbFilterItem{}, SelectOne: selectOne, SortFields: []dbSortItem{}}
 
 	return query
 }
