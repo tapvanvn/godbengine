@@ -444,6 +444,15 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 			opts = opts.SetLimit(int64(paging.PageSize))
 			opts = opts.SetSkip(int64(paging.PageNum * paging.PageSize))
 		}
+		for _, sort := range query.SortFields {
+
+			if sort.Inscrease {
+
+				opts = opts.SetSort(bson.M{sort.Field: 1})
+			} else {
+				opts = opts.SetSort(bson.M{sort.Field: -1})
+			}
+		}
 		total, err := col.CountDocuments(ctx, filter, options.Count())
 		if err != nil {
 

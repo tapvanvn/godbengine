@@ -7,11 +7,17 @@ type dbFilterItem struct {
 	Value    interface{}
 }
 
+type dbSortItem struct {
+	Field     string
+	Inscrease bool
+}
+
 //DBQuery query
 type DBQuery struct {
 	Collection string
 	Fields     []dbFilterItem
 	SelectOne  bool
+	SortFields []dbSortItem
 	paging     *DBQueryPage
 }
 
@@ -40,6 +46,13 @@ func (query *DBQuery) Filter(field string, compareOperator string, value interfa
 	//TODO: verify operator, value
 
 	query.Fields = append(query.Fields, filterItem)
+}
+
+func (query *DBQuery) Sort(field string, insc bool) {
+
+	sortItem := dbSortItem{Field: field, Inscrease: insc}
+
+	query.SortFields = append(query.SortFields, sortItem)
 }
 
 //Paging paging
