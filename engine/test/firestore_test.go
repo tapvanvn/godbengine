@@ -12,7 +12,7 @@ import (
 )
 
 type TestFSDocument struct {
-	UUID   uuid.UUID `json:"_id"`
+	UUID   uuid.UUID `json:"id"`
 	Number int       `json:"number" bson:"number"`
 }
 
@@ -28,7 +28,7 @@ func EngineInit(engine *engine.Engine) {
 
 	fmt.Println(rootPath)
 
-	projectID := ""
+	projectID := "mydefipet"
 
 	//read mongodb define
 	connectString := projectID + ":" + rootPath + "/credential.json"
@@ -53,7 +53,7 @@ func TestFirestorePool(t *testing.T) {
 
 	t.Log("set test document")
 
-	doc := TestFSDocument{UUID: uuid.MustParse("36ecce31-266a-489d-a3b0-96df0a7a5cfc"),
+	doc := &TestFSDocument{UUID: uuid.MustParse("36ecce31-266a-489d-a3b0-96df0a7a5cfc"),
 		Number: 2}
 
 	err := engine.GetDocumentPool().Put("test", doc)
@@ -91,5 +91,49 @@ func TestFirestorePool(t *testing.T) {
 
 		t.Fail()
 		return
+	}
+}
+
+func TestFirestoreQuery(t *testing.T) {
+	engines.InitEngineFunc = EngineInit
+
+	eng := engines.GetEngine()
+
+	/*t.Log("set test document")
+
+	for i := 0; i < 100; i++ {
+
+		fmt.Println("put doc:", i)
+
+		doc := TestFSDocument{UUID: uuid.New(),
+			Number: i}
+
+		err := eng.GetDocumentPool().Put("test", doc)
+
+		if err != nil {
+
+			t.Fail()
+
+			t.Error(err)
+
+			return
+		}
+	}*/
+
+	query := engine.MakeDBQuery("test", false)
+	query.Filter("Number", "=", 2)
+	rs := eng.GetDocumentPool().Query(query)
+
+	defer rs.Close()
+
+	doc2 := &TestFSDocument{}
+	err := rs.Next(doc2)
+	for {
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		fmt.Println(doc2)
+		err = rs.Next(doc2)
 	}
 }

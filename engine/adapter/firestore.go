@@ -130,11 +130,14 @@ func (result FirestoreQueryResult) Next(document interface{}) error {
 	if !result.SelectOne {
 
 		doc, err := result.Iter.Next()
+
 		if err != nil {
+
 			return err
 		}
 
 		err = doc.DataTo(document)
+
 		if err != nil {
 
 			return err
@@ -153,7 +156,82 @@ func (result FirestoreQueryResult) Count() int64 {
 //GetOne get single result document
 func (result FirestoreQueryResult) GetOne(document interface{}) error {
 
+	if result.SelectOne {
+
+		docs, err := result.Iter.GetAll()
+		if err != nil {
+			return err
+		}
+		if len(docs) != 1 {
+			return errors.New("no document")
+		}
+		return docs[0].DataTo(document)
+	}
 	return errors.New("get single result while requested many document query")
+}
+
+//MARK: Transaction
+type FirestoreTransactionItem struct {
+	command    string
+	collection string
+	document   engine.Document
+	id         string
+}
+
+//Begin dbtransaction begin
+func (transaction *FirestoreTransaction) Begin() {
+
+}
+
+//Put dbtransaction put
+func (transaction *FirestoreTransaction) Put(collection string, document engine.Document) {
+
+	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "put", collection: collection, document: document})
+}
+
+//Del dbtransaction delete
+func (transaction *FirestoreTransaction) Del(collection string, id string) {
+
+	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "del", collection: collection, id: id})
+}
+
+//Commit dbtransaction commit
+func (transaction *FirestoreTransaction) Commit() error {
+
+	batch := transaction.client.client.Batch()
+
+	ctx := context.Background()
+
+	for _, item := range transaction.items {
+
+		col := transaction.client.getCollection(item.collection)
+
+		if col == nil {
+
+			return errors.New("get collection fail")
+		}
+
+		if item.command == "put" {
+
+			batch.Set(col.Doc(item.id), item.document)
+
+		} else if item.command == "del" {
+
+			batch.Delete(col.Doc(item.id))
+		}
+	}
+	_, err := batch.Commit(ctx)
+
+	return err
+}
+
+//MARK: Pool
+
+//FirestoreTransaction apply DBTransaction
+type FirestoreTransaction struct {
+	database string
+	client   *FirestoreClient
+	items    []FirestoreTransactionItem
 }
 
 //Get get document
@@ -254,6 +332,8 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			}
 			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
 			queryResult.isAvailable = true
+			fsQuery = fsQuery.Limit(1)
+			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
 
 		} else {
 			queryResult.SelectOne = false
@@ -275,7 +355,7 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			//TODO: apply error and total
 		}
 	}
-
+	fmt.Println(fsQuery)
 	return queryResult
 }
 
@@ -289,10 +369,8 @@ func (pool *FirestorePool) IsNoRecordError(err error) bool {
 //MakeTransaction create new transaction
 func (pool *FirestorePool) MakeTransaction() engine.DBTransaction {
 
-	/*trans := MongoTransaction{mongoClient: pool.SelectRobin(),
-		items:    make([]MongoTransactionItem, 0),
-		database: pool.database}
+	trans := FirestoreTransaction{client: pool.SelectRobin(),
+		items: make([]FirestoreTransactionItem, 0)}
 
-	return &trans*/
-	return nil
+	return &trans
 }
