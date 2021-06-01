@@ -1,5 +1,9 @@
 package engine
 
+import "errors"
+
+var NoDocument = errors.New("no document")
+
 //Document define a interface for document
 type Document interface {
 	GetID() string

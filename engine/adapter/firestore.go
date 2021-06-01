@@ -163,7 +163,7 @@ func (result FirestoreQueryResult) GetOne(document interface{}) error {
 			return err
 		}
 		if len(docs) != 1 {
-			return errors.New("no document")
+			return engine.NoDocument
 		}
 		return docs[0].DataTo(document)
 	}
@@ -362,8 +362,7 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 //IsNoRecordError check if error is no record error
 func (pool *FirestorePool) IsNoRecordError(err error) bool {
 
-	//return err == mongo.ErrNoDocuments
-	return false
+	return err == engine.NoDocument
 }
 
 //MakeTransaction create new transaction
