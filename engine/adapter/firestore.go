@@ -186,7 +186,7 @@ func (transaction *FirestoreTransaction) Begin() {
 //Put dbtransaction put
 func (transaction *FirestoreTransaction) Put(collection string, document engine.Document) {
 
-	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "put", collection: collection, document: document})
+	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "put", collection: collection, document: document, id: document.GetID()})
 }
 
 //Del dbtransaction delete
