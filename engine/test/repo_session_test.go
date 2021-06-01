@@ -3,13 +3,13 @@ package test
 import (
 	"testing"
 
-	"github.com/tapvanvn/godbengine/engine"
+	engines "github.com/tapvanvn/godbengine"
 )
 
 func TestMemPool(t *testing.T) {
 
-	engine := engine.GetEngine()
-	engine.Start()
+	engine := engines.GetEngine()
+
 	t.Log("set value")
 	err := engine.GetMemPool().Set("test_key", "this is a test")
 
