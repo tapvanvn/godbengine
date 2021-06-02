@@ -9,6 +9,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/tapvanvn/godbengine/engine"
+	"google.golang.org/api/iterator"
 	_ "google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
@@ -132,8 +133,11 @@ func (result FirestoreQueryResult) Next(document interface{}) error {
 		doc, err := result.Iter.Next()
 
 		if err != nil {
-
-			return err
+			if err == iterator.Done {
+				return engine.NoDocument
+			} else {
+				return err
+			}
 		}
 
 		err = doc.DataTo(document)
