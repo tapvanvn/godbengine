@@ -106,7 +106,7 @@ func (result MongoQueryResult) Next(document interface{}) error {
 			}
 			return nil
 		}
-		return errors.New("no more")
+		return mongo.ErrNoDocuments
 	}
 	return errors.New("select on cursor while requested single query")
 }
