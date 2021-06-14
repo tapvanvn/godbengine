@@ -359,7 +359,7 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			//TODO: apply error and total
 		}
 	}
-	fmt.Println(fsQuery)
+
 	return queryResult
 }
 
