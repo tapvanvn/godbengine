@@ -89,7 +89,15 @@ func (watcher *Watcher) Watch(collection string, doc Document) error {
 	watcher.mux.Unlock()
 	return nil
 }
+func (watcher *Watcher) StopWatch(collection string, doc Document) {
+	mapID := collection + "$" + doc.GetID()
 
+	watcher.mux.Lock()
+	delete(watcher.documents, mapID)
+	delete(watcher.dirty, mapID)
+	delete(watcher.tick, mapID)
+	watcher.mux.Unlock()
+}
 func (watcher *Watcher) Run() {
 
 	if watcher.isRun {
