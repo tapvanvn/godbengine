@@ -323,44 +323,43 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			return queryResult
 		}
 
-		if query.SelectOne {
-			queryResult.SelectOne = true
-			queryResult.isAvailable = true
-			for _, sort := range query.SortFields {
+	}
 
-				if sort.Inscrease {
-					fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
-				} else {
-					fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
-				}
-			}
-			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
-			queryResult.isAvailable = true
-			fsQuery = fsQuery.Limit(1)
-			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+	if query.SelectOne {
+		queryResult.SelectOne = true
+		queryResult.isAvailable = true
+		for _, sort := range query.SortFields {
 
-		} else {
-			queryResult.SelectOne = false
-			paging := query.GetPaging()
-			if paging != nil && paging.PageSize > 0 {
-				fsQuery = fsQuery.Limit(paging.PageSize).StartAt(paging.PageNum * paging.PageSize)
+			if sort.Inscrease {
+				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
+			} else {
+				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
 			}
-			for _, sort := range query.SortFields {
-
-				if sort.Inscrease {
-					fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
-				} else {
-					fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
-				}
-			}
-
-			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
-			if queryResult.Iter == nil {
-				fmt.Println("iter nil")
-			}
-			queryResult.isAvailable = true
-			//TODO: apply error and total
 		}
+		queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+		queryResult.isAvailable = true
+		fsQuery = fsQuery.Limit(1)
+		queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+
+	} else {
+		queryResult.SelectOne = false
+		paging := query.GetPaging()
+		if paging != nil && paging.PageSize > 0 {
+			fsQuery = fsQuery.Limit(paging.PageSize).StartAt(paging.PageNum * paging.PageSize)
+		}
+		for _, sort := range query.SortFields {
+
+			if sort.Inscrease {
+				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
+			} else {
+				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
+			}
+		}
+
+		queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+
+		queryResult.isAvailable = true
+		//TODO: apply error and total
 	}
 
 	return queryResult

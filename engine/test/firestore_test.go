@@ -121,7 +121,7 @@ func TestFirestoreQuery(t *testing.T) {
 	}*/
 
 	query := engine.MakeDBQuery("test", false)
-	query.Filter("Number", "=", 2)
+	//query.Filter("Number", "=", 2)
 	rs := eng.GetDocumentPool().Query(query)
 
 	defer rs.Close()
