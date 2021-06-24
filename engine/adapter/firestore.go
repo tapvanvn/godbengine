@@ -290,7 +290,7 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 	col := pool.First().getCollection(query.Collection)
 
 	ctx := context.TODO()
-	queryResult := FirestoreQueryResult{Err: nil, Ctx: ctx}
+	queryResult := &FirestoreQueryResult{Err: nil, Ctx: ctx}
 
 	if col == nil {
 
@@ -355,6 +355,9 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			}
 
 			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+			if queryResult.Iter == nil {
+				fmt.Println("iter nil")
+			}
 			queryResult.isAvailable = true
 			//TODO: apply error and total
 		}
