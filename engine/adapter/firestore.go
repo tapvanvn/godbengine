@@ -12,6 +12,8 @@ import (
 	"google.golang.org/api/iterator"
 	_ "google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type FirestoreClient struct {
@@ -249,7 +251,11 @@ func (pool *FirestorePool) Get(collection string, id string, document interface{
 	ctx := context.TODO()
 	doc, err := col.Doc(id).Get(ctx)
 	if err != nil {
-		return err
+		if status.Code(err) == codes.NotFound {
+			return engine.NoDocument
+		} else {
+			return err
+		}
 	}
 	doc.DataTo(document)
 	return nil
