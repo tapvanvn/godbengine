@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,17 +37,46 @@ func (pool *RedisPool) Init(connectionString string) error {
 	clients := strings.Split(connectionString, ",")
 
 	for _, client := range clients {
+		var numClient = 1
+		hasNumClient := strings.Index(client, "[")
 
-		var redisClient = redis.NewClient(&redis.Options{
+		if hasNumClient > 0 {
+			end := strings.Index(client, "]")
+			if end > hasNumClient {
+				numString := client[hasNumClient:end]
+				if tryParse, err := strconv.ParseInt(numString, 10, 64); err == nil {
+					numClient = int(tryParse)
+				}
+			}
+			client = client[0:hasNumClient]
+		}
+		var database = 0
 
-			Addr:     client,
-			Password: "",
-			DB:       0,
-		})
+		parts := strings.Split(client, "/")
+		if len(parts) == 2 {
+			client = parts[0]
+			if tryDb, err := strconv.Atoi(parts[1]); err == nil {
+				database = tryDb
+			}
+		}
+		password := ""
+		parts = strings.Split(client, "@")
+		if len(parts) == 2 {
+			password = parts[0]
+			client = parts[1]
+		}
 
-		fmt.Println("redis new client ", client)
+		for i := 0; i < numClient; i++ {
+			var redisClient = redis.NewClient(&redis.Options{
 
-		pool.clients = append(pool.clients, redisClient)
+				Addr:     client,
+				Password: password,
+				DB:       database,
+			})
+
+			fmt.Println("redis new client ", client)
+			pool.clients = append(pool.clients, redisClient)
+		}
 	}
 
 	fmt.Println("redis pool ", len(pool.clients), " clients.")
