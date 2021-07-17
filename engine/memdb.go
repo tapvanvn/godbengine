@@ -20,7 +20,7 @@ type MemPool interface {
 	SetExpire(key string, value string, d time.Duration) error
 
 	//SetExpireShading select pool by shading the key, set key value with expire
-	SetExpireShading(key string, value string) error
+	SetExpireShading(key string, value string, d time.Duration) error
 
 	//MARK: GET FUNCTIONS
 
