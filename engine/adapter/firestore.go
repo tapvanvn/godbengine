@@ -358,7 +358,7 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			if sort.Inscrease {
 				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
 			} else {
-				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
+				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Desc)
 			}
 		}
 
