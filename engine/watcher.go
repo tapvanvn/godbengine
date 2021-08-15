@@ -77,6 +77,14 @@ func (watcher *Watcher) Update(collection string, docID string) {
 	watcher.mux.Unlock()
 }
 
+func (watcher *Watcher) UpdateForce(collection string, docID string) {
+
+	mapID := collection + "$" + docID
+	if doc, ok := watcher.documents[mapID]; ok {
+		watcher.pool.Put(collection, doc)
+	}
+}
+
 //Load carefull when using this function, each mapid map only to one doc at a time. Reload a document will disrupt other connection
 func (watcher *Watcher) Watch(collection string, doc Document) error {
 
@@ -89,6 +97,18 @@ func (watcher *Watcher) Watch(collection string, doc Document) error {
 	watcher.mux.Unlock()
 	return nil
 }
+func (watcher *Watcher) WatchPut(collection string, doc Document) error {
+
+	err := watcher.Watch(collection, doc)
+
+	if err != nil {
+		return err
+	}
+	watcher.UpdateForce(collection, doc.GetID())
+
+	return nil
+}
+
 func (watcher *Watcher) StopWatch(collection string, doc Document) {
 	mapID := collection + "$" + doc.GetID()
 
