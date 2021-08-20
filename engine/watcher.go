@@ -8,6 +8,7 @@ import (
 
 type Watcher struct {
 	mux       sync.Mutex
+	docMux    sync.Mutex
 	timeRange time.Duration
 	isRun     bool
 	documents map[string]Document
@@ -21,7 +22,7 @@ func NewWatcher(timeRange time.Duration, pool DocumentPool) *Watcher {
 	return &Watcher{
 		timeRange: timeRange,
 		isRun:     false,
-		documents: make(map[string]Document),
+		documents: map[string]Document{},
 		tick:      map[string]int64{},
 		dirty:     map[string]bool{},
 		pool:      pool,
@@ -29,9 +30,6 @@ func NewWatcher(timeRange time.Duration, pool DocumentPool) *Watcher {
 }
 
 func (watcher *Watcher) run() {
-
-	watcher.mux.Lock()
-	defer watcher.mux.Unlock()
 
 	deadline := time.Now().Unix() - int64(watcher.timeRange.Seconds())
 
@@ -43,10 +41,15 @@ func (watcher *Watcher) run() {
 		if dirty {
 			tick, _ := watcher.tick[key]
 			if tick < deadline {
-				if doc, ok := watcher.documents[key]; ok {
+				watcher.docMux.Lock()
+				doc, ok := watcher.documents[key]
+				watcher.docMux.Unlock()
+				if ok {
 					parts := strings.Split(key, "$")
 					transaction.Put(parts[0], doc)
+					watcher.mux.Lock()
 					watcher.dirty[key] = false
+					watcher.mux.Unlock()
 					count++
 					if count == 150 {
 
@@ -81,18 +84,23 @@ func (watcher *Watcher) Update(collection string, docID string) {
 func (watcher *Watcher) UpdateForce(collection string, docID string) {
 
 	mapID := collection + "$" + docID
+	watcher.docMux.Lock()
 	if doc, ok := watcher.documents[mapID]; ok {
 		watcher.pool.Put(collection, doc)
 	}
+	watcher.docMux.Unlock()
 }
 
 //Load carefull when using this function, each mapid map only to one doc at a time. Reload a document will disrupt other connection
 func (watcher *Watcher) Watch(collection string, doc Document) error {
 
 	mapID := collection + "$" + doc.GetID()
+	watcher.docMux.Lock()
+	watcher.documents[mapID] = doc
+	watcher.docMux.Unlock()
 
 	watcher.mux.Lock()
-	watcher.documents[mapID] = doc
+
 	watcher.tick[mapID] = time.Now().Unix()
 	watcher.dirty[mapID] = false
 	watcher.mux.Unlock()
@@ -112,9 +120,11 @@ func (watcher *Watcher) WatchPut(collection string, doc Document) error {
 
 func (watcher *Watcher) StopWatch(collection string, doc Document) {
 	mapID := collection + "$" + doc.GetID()
+	watcher.docMux.Lock()
+	delete(watcher.documents, mapID)
+	watcher.docMux.Unlock()
 
 	watcher.mux.Lock()
-	delete(watcher.documents, mapID)
 	delete(watcher.dirty, mapID)
 	delete(watcher.tick, mapID)
 	watcher.mux.Unlock()
