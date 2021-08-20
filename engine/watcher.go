@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -56,6 +57,7 @@ func (watcher *Watcher) run() {
 						err := transaction.Commit()
 						if err != nil {
 							//TODO: report error
+							fmt.Println("Watcher", err)
 						}
 						transaction = watcher.pool.MakeTransaction()
 						transaction.Begin()
@@ -67,6 +69,9 @@ func (watcher *Watcher) run() {
 	if count > 0 {
 		err := transaction.Commit()
 		if err != nil {
+
+			fmt.Println("Watcher", err)
+
 			//TODO: report error
 		}
 	}
@@ -86,7 +91,9 @@ func (watcher *Watcher) UpdateForce(collection string, docID string) {
 	mapID := collection + "$" + docID
 	watcher.docMux.Lock()
 	if doc, ok := watcher.documents[mapID]; ok {
-		watcher.pool.Put(collection, doc)
+		if err := watcher.pool.Put(collection, doc); err != nil {
+			fmt.Println("Watcher", collection, docID, err)
+		}
 	}
 	watcher.docMux.Unlock()
 }
