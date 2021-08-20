@@ -30,6 +30,9 @@ func NewWatcher(timeRange time.Duration, pool DocumentPool) *Watcher {
 
 func (watcher *Watcher) run() {
 
+	watcher.mux.Lock()
+	defer watcher.mux.Unlock()
+
 	deadline := time.Now().Unix() - int64(watcher.timeRange.Seconds())
 
 	transaction := watcher.pool.MakeTransaction()
