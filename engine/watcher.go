@@ -46,9 +46,7 @@ func (watcher *Watcher) run() {
 				if doc, ok := watcher.documents[key]; ok {
 					parts := strings.Split(key, "$")
 					transaction.Put(parts[0], doc)
-					watcher.mux.Lock()
 					watcher.dirty[key] = false
-					watcher.mux.Unlock()
 					count++
 					if count == 150 {
 
