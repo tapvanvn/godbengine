@@ -34,6 +34,8 @@ func (watcher *Watcher) run() {
 
 	deadline := time.Now().Unix() - int64(watcher.timeRange.Seconds())
 
+	watcher.mux.Lock()
+	defer watcher.mux.Unlock()
 	transaction := watcher.pool.MakeTransaction()
 
 	transaction.Begin()
@@ -48,9 +50,9 @@ func (watcher *Watcher) run() {
 				if ok {
 					parts := strings.Split(key, "$")
 					transaction.Put(parts[0], doc)
-					watcher.mux.Lock()
+
 					watcher.dirty[key] = false
-					watcher.mux.Unlock()
+
 					count++
 					if count == 150 {
 
