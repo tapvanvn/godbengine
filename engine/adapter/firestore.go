@@ -328,7 +328,6 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			queryResult.isAvailable = false
 			return queryResult
 		}
-
 	}
 
 	if query.SelectOne {

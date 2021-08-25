@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	redis "github.com/go-redis/redis/v8"
 )
 
 //RedisPool redis pool
@@ -125,15 +125,62 @@ func (pool *RedisPool) Set(key string, value string) error {
 
 	return pool.First().Set(context.Background(), key, value, 0).Err()
 }
+func (pool *RedisPool) SetInt(key string, value int64) error {
 
+	return pool.First().Set(context.Background(), key, value, 0).Err()
+}
+func (pool *RedisPool) IncrInt(key string) error {
+
+	return pool.First().Incr(context.Background(), key).Err()
+}
+func (pool *RedisPool) DecrInt(key string) error {
+
+	return pool.First().Decr(context.Background(), key).Err()
+}
+func (pool *RedisPool) IncrIntBy(key string, num int64) error {
+
+	return pool.First().IncrBy(context.Background(), key, num).Err()
+}
+func (pool *RedisPool) DecrIntBy(key string, num int64) error {
+
+	return pool.First().DecrBy(context.Background(), key, num).Err()
+}
+
+//MARK: Shading
 //SetShading select pool by shading the key
 func (pool *RedisPool) SetShading(key string, value string) error {
 
 	return pool.SelectShading(key).Set(context.Background(), key, value, 0).Err()
 }
+func (pool *RedisPool) SetIntShading(key string, value int64) error {
+
+	return pool.SelectShading(key).Set(context.Background(), key, value, 0).Err()
+}
+func (pool *RedisPool) IncrIntShading(key string) (int64, error) {
+
+	return pool.SelectShading(key).Incr(context.Background(), key).Result()
+}
+func (pool *RedisPool) DescIntShading(key string) (int64, error) {
+
+	return pool.SelectShading(key).Decr(context.Background(), key).Result()
+}
+
+func (pool *RedisPool) IncrIntByShading(key string, num int64) (int64, error) {
+
+	return pool.SelectShading(key).IncrBy(context.Background(), key, num).Result()
+}
+
+func (pool *RedisPool) DecrIntByShading(key string, num int64) (int64, error) {
+
+	return pool.SelectShading(key).DecrBy(context.Background(), key, num).Result()
+}
 
 //SetExpire set key
 func (pool *RedisPool) SetExpire(key string, value string, d time.Duration) error {
+
+	return pool.First().Set(context.Background(), key, value, d).Err()
+}
+func (pool *RedisPool) SetIntExpire(key string, value int64, d time.Duration) error {
 
 	return pool.First().Set(context.Background(), key, value, d).Err()
 }
@@ -144,16 +191,29 @@ func (pool *RedisPool) SetExpireShading(key string, value string, d time.Duratio
 	return pool.SelectShading(key).Set(context.Background(), key, value, d).Err()
 }
 
+func (pool *RedisPool) SetIntExpireShading(key string, value int64, d time.Duration) error {
+
+	return pool.SelectShading(key).Set(context.Background(), key, value, d).Err()
+}
+
 //Get get from key
 func (pool *RedisPool) Get(key string) (string, error) {
 
 	return pool.First().Get(context.Background(), key).Result()
+}
+func (pool *RedisPool) GetInt(key string) (int64, error) {
+	return pool.First().IncrBy(context.Background(), key, 0).Result()
 }
 
 //GetShading get from key that set by shading
 func (pool *RedisPool) GetShading(key string) (string, error) {
 
 	return pool.SelectShading(key).Get(context.Background(), key).Result()
+}
+
+func (pool *RedisPool) GetIntShading(key string) (int64, error) {
+
+	return pool.SelectShading(key).IncrBy(context.Background(), key, 0).Result()
 }
 
 //Del delete session
