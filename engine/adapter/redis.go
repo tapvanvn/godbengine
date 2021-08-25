@@ -129,21 +129,21 @@ func (pool *RedisPool) SetInt(key string, value int64) error {
 
 	return pool.First().Set(context.Background(), key, value, 0).Err()
 }
-func (pool *RedisPool) IncrInt(key string) error {
+func (pool *RedisPool) IncrInt(key string) (int64, error) {
 
-	return pool.First().Incr(context.Background(), key).Err()
+	return pool.First().Incr(context.Background(), key).Result()
 }
-func (pool *RedisPool) DecrInt(key string) error {
+func (pool *RedisPool) DecrInt(key string) (int64, error) {
 
-	return pool.First().Decr(context.Background(), key).Err()
+	return pool.First().Decr(context.Background(), key).Result()
 }
-func (pool *RedisPool) IncrIntBy(key string, num int64) error {
+func (pool *RedisPool) IncrIntBy(key string, num int64) (int64, error) {
 
-	return pool.First().IncrBy(context.Background(), key, num).Err()
+	return pool.First().IncrBy(context.Background(), key, num).Result()
 }
-func (pool *RedisPool) DecrIntBy(key string, num int64) error {
+func (pool *RedisPool) DecrIntBy(key string, num int64) (int64, error) {
 
-	return pool.First().DecrBy(context.Background(), key, num).Err()
+	return pool.First().DecrBy(context.Background(), key, num).Result()
 }
 
 //MARK: Shading

@@ -13,10 +13,10 @@ type MemPool interface {
 	//Set set key
 	Set(key string, value string) error
 	SetInt(key string, value int64) error
-	IncrInt(key string) error
-	DecrInt(key string) error
-	IncrIntBy(key string, num int64) error
-	DecrIntBy(key string, num int64) error
+	IncrInt(key string) (int64, error)
+	DecrInt(key string) (int64, error)
+	IncrIntBy(key string, num int64) (int64, error)
+	DecrIntBy(key string, num int64) (int64, error)
 
 	//SetShading select pool by shading the key
 	SetShading(key string, value string) error
