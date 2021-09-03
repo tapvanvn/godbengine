@@ -476,6 +476,11 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 	return queryResult
 }
 
+//We dont need to implement anything on mongodb
+func (pool *MongoPool) CleanPagingInfo(query engine.DBQuery) {
+
+}
+
 //MARK: MongoTransaction
 
 //Begin dbtransaction begin

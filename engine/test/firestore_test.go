@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,8 +13,8 @@ import (
 )
 
 type TestFSDocument struct {
-	UUID   uuid.UUID `json:"id"`
-	Number int       `json:"number" bson:"number"`
+	UUID   uuid.UUID `json:"UUID"`
+	Number int       `json:"Number" bson:"Number"`
 }
 
 //GetID implement Document
@@ -22,13 +23,23 @@ func (document TestFSDocument) GetID() string {
 	return document.UUID.String()
 }
 
+type StringIDEntity struct {
+	ID     int64 `json:"ID" bson:"ID"`
+	Number int64 `json:"Number" bson:"Number"`
+}
+
+func (document *StringIDEntity) GetID() string {
+
+	return strconv.FormatInt(document.ID, 10)
+}
+
 func EngineInit(engine *engine.Engine) {
 
 	rootPath, _ := os.Getwd()
 
 	fmt.Println(rootPath)
 
-	projectID := "mydefipet"
+	projectID := "newcontinent-platform"
 
 	//read mongodb define
 	connectString := projectID + ":" + rootPath + "/credential.json"
@@ -45,6 +56,29 @@ func EngineInit(engine *engine.Engine) {
 	//mongo file pool
 	engine.Init(nil, &pool, nil)
 }
+
+//Help functions
+func GenerateTestData(pool engine.DocumentPool) error {
+
+	for i := int64(0); i < 100; i++ {
+
+		fmt.Println("put doc:", i)
+
+		doc := &StringIDEntity{
+			ID:     i,
+			Number: i,
+		}
+
+		err := pool.Put("test", doc)
+
+		if err != nil {
+
+			return err
+		}
+	}
+	return nil
+}
+
 func TestFirestorePool(t *testing.T) {
 
 	engines.InitEngineFunc = EngineInit
@@ -99,26 +133,7 @@ func TestFirestoreQuery(t *testing.T) {
 
 	eng := engines.GetEngine()
 
-	/*t.Log("set test document")
-
-	for i := 0; i < 100; i++ {
-
-		fmt.Println("put doc:", i)
-
-		doc := TestFSDocument{UUID: uuid.New(),
-			Number: i}
-
-		err := eng.GetDocumentPool().Put("test", doc)
-
-		if err != nil {
-
-			t.Fail()
-
-			t.Error(err)
-
-			return
-		}
-	}*/
+	GenerateTestData(eng.GetDocumentPool())
 
 	query := engine.MakeDBQuery("test", false)
 	//query.Filter("Number", "=", 2)
@@ -135,5 +150,39 @@ func TestFirestoreQuery(t *testing.T) {
 		}
 		fmt.Println(doc2)
 		err = rs.Next(doc2)
+	}
+}
+
+func TestFirestoreQueryPaging(t *testing.T) {
+
+	engines.InitEngineFunc = EngineInit
+	eng := engines.GetEngine()
+	pool := eng.GetDocumentPool()
+
+	//GenerateTestData(pool)
+
+	query := engine.MakeDBQuery("test", false)
+	query.Sort("Number", true)
+
+	pool.CleanPagingInfo(query)
+
+	for i := 0; i < 15; i++ {
+
+		fmt.Println("query page", i)
+		query.Paging(i, 11)
+
+		rs := pool.Query(query)
+		defer rs.Close()
+		doc2 := &StringIDEntity{}
+		err := rs.Next(doc2)
+		for {
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			fmt.Println(doc2)
+			err = rs.Next(doc2)
+		}
+		fmt.Println()
 	}
 }

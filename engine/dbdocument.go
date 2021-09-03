@@ -3,6 +3,7 @@ package engine
 import "errors"
 
 var NoDocument = errors.New("no document")
+var InvalidQuery = errors.New("Query is not valid")
 
 //Document define a interface for document
 type Document interface {
@@ -40,4 +41,6 @@ type DocumentPool interface {
 
 	//Query query
 	Query(query DBQuery) DBQueryResult
+
+	CleanPagingInfo(query DBQuery)
 }

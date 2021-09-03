@@ -95,8 +95,136 @@ func (pool *FirestorePool) Init(connectionString string) error {
 	return nil
 }
 
-//MARK: FirestoreQueryResult
+//MARK: PagingHelper
+type FirestorePagingItem struct {
+	pageSize       int
+	pageEndID      map[int]*firestore.DocumentSnapshot
+	persistentPage int
+}
 
+func (pagingItem *FirestorePagingItem) adaptPaging(query engine.DBQuery, pool *FirestorePool, fsQuery firestore.Query) (firestore.Query, bool) {
+
+	paging := query.GetPaging()
+
+	if paging.PageNum == 0 {
+
+		return fsQuery.Limit(pagingItem.pageSize), true
+	}
+	if paging.PageNum <= pagingItem.persistentPage {
+
+		return fsQuery.Limit(pagingItem.pageSize).StartAfter(pagingItem.pageEndID[paging.PageNum]), true
+	}
+
+	fetchQuery, isComplete := pool.fetchQueryWithOutPaging(query)
+
+	if !isComplete {
+		return fsQuery, false
+	}
+
+	ctx := context.TODO()
+
+	hasOrder := len(query.SortFields) > 0
+
+	if pagingItem.persistentPage == 0 {
+
+		if !hasOrder {
+
+			docs, err := fetchQuery.OrderBy(firestore.DocumentID, firestore.Asc).Limit(pagingItem.pageSize).Documents(ctx).GetAll()
+			if err != nil {
+				return fsQuery, false
+			}
+			numDoc := len(docs)
+			pagingItem.pageEndID[0] = docs[numDoc-1]
+		} else {
+
+			docs, err := fetchQuery.Limit(pagingItem.pageSize).Documents(ctx).GetAll()
+			if err != nil {
+				return fsQuery, false
+			}
+			numDoc := len(docs)
+			pagingItem.pageEndID[0] = docs[numDoc-1]
+		}
+	}
+
+	for i := pagingItem.persistentPage + 1; i < paging.PageNum; i++ {
+
+		if !hasOrder {
+
+			docs, err := fetchQuery.OrderBy(firestore.DocumentID, firestore.Asc).Limit(pagingItem.pageSize).StartAfter(pagingItem.pageEndID[i-1]).Documents(ctx).GetAll()
+			if err != nil {
+
+				return fsQuery, false
+			}
+			numDoc := len(docs)
+
+			pagingItem.pageEndID[i] = docs[numDoc-1]
+
+			if numDoc < pagingItem.pageSize {
+
+				return fsQuery, false
+			}
+		} else {
+
+			docs, err := fetchQuery.Limit(pagingItem.pageSize).StartAfter(pagingItem.pageEndID[i-1]).Documents(ctx).GetAll()
+			if err != nil {
+				return fsQuery, false
+			}
+			numDoc := len(docs)
+
+			pagingItem.pageEndID[i] = docs[numDoc-1]
+
+			if numDoc < pagingItem.pageSize {
+
+				return fsQuery, false
+			}
+		}
+		pagingItem.persistentPage = i
+	}
+
+	return fsQuery.OrderBy(firestore.DocumentID, firestore.Asc).Limit(pagingItem.pageSize).StartAfter(pagingItem.pageEndID[paging.PageNum-1]), true
+}
+
+type FirestorePagingHelper map[int]*FirestorePagingItem
+
+var __fspaging_helper = map[string]FirestorePagingHelper{}
+
+func getPagingHelper(query engine.DBQuery) *FirestorePagingItem {
+
+	paging := query.GetPaging()
+
+	if paging != nil && paging.PageSize > 0 && query.SelectOne == false {
+
+		signature := query.GetSignature()
+
+		if helper, ok := __fspaging_helper[signature]; ok {
+
+			if _, ok := helper[paging.PageSize]; !ok {
+
+				helper[paging.PageSize] = &FirestorePagingItem{
+					pageSize:  paging.PageSize,
+					pageEndID: map[int]*firestore.DocumentSnapshot{},
+				}
+			}
+			return helper[paging.PageSize]
+
+		} else {
+
+			item := &FirestorePagingItem{
+
+				pageSize:  paging.PageSize,
+				pageEndID: map[int]*firestore.DocumentSnapshot{},
+			}
+			__fspaging_helper[signature] = FirestorePagingHelper{}
+
+			__fspaging_helper[signature][paging.PageSize] = item
+
+			return item
+		}
+	}
+	return nil
+}
+
+//MARK: FirestoreQueryResult
 //FirestoreQueryResult result of query
 type FirestoreQueryResult struct {
 	SelectOne   bool
@@ -130,6 +258,10 @@ func (result FirestoreQueryResult) Error() error {
 //Next get next document
 func (result FirestoreQueryResult) Next(document interface{}) error {
 
+	if !result.isAvailable {
+
+		return engine.InvalidQuery
+	}
 	if !result.SelectOne {
 
 		doc, err := result.Iter.Next()
@@ -290,20 +422,16 @@ func (pool *FirestorePool) Del(collection string, id string) error {
 	return nil
 }
 
-//Query query document
-func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
+type FirestoreQueryItem struct {
+	isComplete bool
+	fsquery    firestore.Query
+}
+
+var __fsquery = map[string]*FirestoreQueryItem{}
+
+func (pool *FirestorePool) fetchQueryWithOutPaging(query engine.DBQuery) (firestore.Query, bool) {
 
 	col := pool.First().getCollection(query.Collection)
-
-	ctx := context.TODO()
-	queryResult := &FirestoreQueryResult{Err: nil, Ctx: ctx}
-
-	if col == nil {
-
-		queryResult.Err = errors.New("get collection fail")
-
-		return queryResult
-	}
 
 	var fsQuery firestore.Query = col.Query
 
@@ -321,53 +449,96 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 			filterItem.Operator == "in" {
 
 			fsQuery = fsQuery.Where(filterItem.Field, filterItem.Operator, filterItem.Value)
+
 		} else if filterItem.Operator == "+=" ||
 			filterItem.Operator == "+<" ||
 			filterItem.Operator == "+>" ||
 			filterItem.Operator == "regex" {
-			queryResult.isAvailable = false
-			return queryResult
+
+			return fsQuery, false
 		}
 	}
 
-	if query.SelectOne {
-		queryResult.SelectOne = true
-		queryResult.isAvailable = true
-		for _, sort := range query.SortFields {
+	for _, sort := range query.SortFields {
 
-			if sort.Inscrease {
-				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
-			} else {
-				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Desc)
-			}
+		if sort.Inscrease {
+
+			fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
+
+		} else {
+
+			fsQuery = fsQuery.OrderBy(sort.Field, firestore.Desc)
 		}
-		queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+	}
+
+	return fsQuery, true
+}
+
+//Query query document
+func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
+
+	col := pool.First().getCollection(query.Collection)
+
+	ctx := context.TODO()
+	queryResult := &FirestoreQueryResult{Err: nil, Ctx: ctx}
+
+	if col == nil {
+
+		queryResult.Err = errors.New("get collection fail")
+
+		return queryResult
+	}
+
+	fsQuery, complete := pool.fetchQueryWithOutPaging(query)
+	if !complete {
+		queryResult.isAvailable = false
+		return queryResult
+	}
+
+	if query.SelectOne {
+
+		queryResult.SelectOne = true
 		queryResult.isAvailable = true
 		fsQuery = fsQuery.Limit(1)
 		queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
 
 	} else {
+
 		queryResult.SelectOne = false
 		paging := query.GetPaging()
 		if paging != nil && paging.PageSize > 0 {
-			fsQuery = fsQuery.Limit(paging.PageSize).StartAt(paging.PageNum * paging.PageSize)
-		}
-		for _, sort := range query.SortFields {
 
-			if sort.Inscrease {
-				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
+			//Process Paging
+			helperItem := getPagingHelper(query)
+
+			adatpPagingQuery, hasPage := helperItem.adaptPaging(query, pool, fsQuery)
+
+			if hasPage {
+
+				fsQuery = adatpPagingQuery
+				queryResult.isAvailable = true
+				queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+
 			} else {
-				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Desc)
+				fmt.Println("no page", paging.PageNum)
+				queryResult.isAvailable = false
 			}
+		} else {
+			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+			queryResult.isAvailable = true
 		}
 
-		queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
-
-		queryResult.isAvailable = true
 		//TODO: apply error and total
 	}
 
 	return queryResult
+}
+
+func (pool *FirestorePool) CleanPagingInfo(query engine.DBQuery) {
+	if query.GetPaging() != nil {
+		helperItem := getPagingHelper(query)
+		helperItem.persistentPage = 0
+	}
 }
 
 //IsNoRecordError check if error is no record error
@@ -384,3 +555,5 @@ func (pool *FirestorePool) MakeTransaction() engine.DBTransaction {
 
 	return &trans
 }
+
+//TODO: Work on paging helper refresh cache system.
