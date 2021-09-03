@@ -162,6 +162,7 @@ func TestFirestoreQueryPaging(t *testing.T) {
 	//GenerateTestData(pool)
 
 	query := engine.MakeDBQuery("test", false)
+
 	query.Sort("Number", true)
 
 	pool.CleanPagingInfo(query)

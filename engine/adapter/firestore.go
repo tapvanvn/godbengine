@@ -180,8 +180,11 @@ func (pagingItem *FirestorePagingItem) adaptPaging(query engine.DBQuery, pool *F
 		}
 		pagingItem.persistentPage = i
 	}
-
-	return fsQuery.OrderBy(firestore.DocumentID, firestore.Asc).Limit(pagingItem.pageSize).StartAfter(pagingItem.pageEndID[paging.PageNum-1]), true
+	if !hasOrder {
+		return fsQuery.OrderBy(firestore.DocumentID, firestore.Asc).Limit(pagingItem.pageSize).StartAfter(pagingItem.pageEndID[paging.PageNum-1]), true
+	} else {
+		return fsQuery.Limit(pagingItem.pageSize).StartAfter(pagingItem.pageEndID[paging.PageNum-1]), true
+	}
 }
 
 type FirestorePagingHelper map[int]*FirestorePagingItem
