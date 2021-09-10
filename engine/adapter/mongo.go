@@ -106,7 +106,7 @@ func (result MongoQueryResult) Next(document interface{}) error {
 			}
 			return nil
 		}
-		return mongo.ErrNoDocuments
+		return engine.NoDocument
 	}
 	return errors.New("select on cursor while requested single query")
 }
@@ -122,7 +122,12 @@ func (result MongoQueryResult) GetOne(document interface{}) error {
 
 	if result.SelectOne {
 
-		return result.SingleResult.Decode(document)
+		err := result.SingleResult.Decode(document)
+		if err == mongo.ErrNoDocuments {
+			return engine.NoDocument
+		} else {
+			return err
+		}
 	}
 	return errors.New("get single result while requested many document query")
 }
@@ -205,8 +210,12 @@ func (pool *MongoPool) Get(collection string, id string, document interface{}) e
 	result := col.FindOne(ctx, filter, opts)
 
 	if result.Err() != nil {
-
-		return result.Err()
+		err := result.Err()
+		if err == mongo.ErrNoDocuments {
+			return engine.NoDocument
+		} else {
+			return err
+		}
 	}
 
 	return result.Decode(document)
@@ -258,7 +267,7 @@ func (pool *MongoPool) Del(collection string, id string) error {
 //IsNoRecordError check if error is no record error
 func (pool *MongoPool) IsNoRecordError(err error) bool {
 
-	return err == mongo.ErrNoDocuments
+	return err == engine.NoDocument //mongo.ErrNoDocuments
 }
 
 //MakeTransaction create new transaction
