@@ -442,7 +442,13 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 		queryResult.SelectOne = true
 		queryResult.SingleResult = col.FindOne(ctx, filter, opts)
-		queryResult.Err = queryResult.SingleResult.Err()
+		err := queryResult.SingleResult.Err()
+		if err == mongo.ErrNoDocuments {
+			queryResult.Err = engine.NoDocument
+		} else {
+			queryResult.Err = err
+		}
+
 		queryResult.isAvailable = true
 
 	} else {
@@ -468,14 +474,15 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 			fmt.Println(err.Error())
 		}
 		result, err := col.Find(ctx, filter, opts)
-		if err != nil {
-
-			fmt.Println(err.Error())
-		}
-		//defer result.Close(ctx)
 
 		queryResult.SelectOne = false
-		queryResult.Err = err
+
+		if err == mongo.ErrNoDocuments {
+			queryResult.Err = engine.NoDocument
+		} else {
+			queryResult.Err = err
+		}
+
 		queryResult.Cursor = result
 		queryResult.isAvailable = true
 		queryResult.Total = total
