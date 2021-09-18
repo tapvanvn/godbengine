@@ -414,6 +414,7 @@ func (pool *FirestorePool) Put(collection string, document engine.Document) erro
 func (pool *FirestorePool) Del(collection string, id string) error {
 
 	col := pool.First().getCollection(collection)
+
 	if col == nil {
 		return errors.New("get collection fail")
 	}
@@ -560,3 +561,9 @@ func (pool *FirestorePool) MakeTransaction() engine.DBTransaction {
 }
 
 //TODO: Work on paging helper refresh cache system.
+
+//MARK: Woking with collection
+func (pool *FirestorePool) DelCollection(collection string) error {
+
+	return engine.NotImplement
+}

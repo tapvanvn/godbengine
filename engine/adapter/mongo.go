@@ -61,6 +61,11 @@ func (client *MongoClient) getCollection(databaseName string, collectionName str
 	return collection
 }
 
+func (client *MongoClient) cleanCacheCollection(databaseName string, collectionName string) {
+
+	delete(client.collections, collectionName)
+}
+
 //MARK: Mongo Query Result
 
 //MongoQueryResult result of query
@@ -249,6 +254,7 @@ func (pool *MongoPool) Put(collection string, document engine.Document) error {
 func (pool *MongoPool) Del(collection string, id string) error {
 
 	col := pool.First().getCollection(pool.database, collection, true)
+
 	if col == nil {
 
 		return errors.New("get collection fail")
@@ -589,4 +595,18 @@ func (transaction *MongoTransaction) Commit() error {
 	fmt.Printf("result: %v\n", result)
 
 	return nil
+}
+
+//MARK: Work with collection
+
+func (pool *MongoPool) DelCollection(collection string) error {
+	ctx := context.Background()
+	col := pool.First().getCollection(pool.database, collection, true)
+	err := col.Drop(ctx)
+	if err == nil {
+		for _, client := range pool.clients {
+			client.cleanCacheCollection(pool.database, collection)
+		}
+	}
+	return err
 }

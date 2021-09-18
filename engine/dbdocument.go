@@ -4,6 +4,7 @@ import "errors"
 
 var NoDocument = errors.New("no document")
 var InvalidQuery = errors.New("Query is not valid")
+var NotImplement = errors.New("Not implement")
 
 //Document define a interface for document
 type Document interface {
@@ -43,4 +44,7 @@ type DocumentPool interface {
 	Query(query DBQuery) DBQueryResult
 
 	CleanPagingInfo(query DBQuery)
+
+	//MARK: Work with collection
+	DelCollection(collection string) error
 }
