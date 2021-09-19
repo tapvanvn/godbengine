@@ -19,6 +19,8 @@ type DBTransaction interface {
 
 	Del(collection string, id string)
 
+	DelCollection(collection string)
+
 	Commit() error
 }
 

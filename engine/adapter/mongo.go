@@ -522,6 +522,11 @@ func (transaction *MongoTransaction) Del(collection string, id string) {
 	transaction.items = append(transaction.items, MongoTransactionItem{command: "del", collection: collection, id: id})
 }
 
+func (transaction *MongoTransaction) DelCollection(collection string) {
+
+	transaction.items = append(transaction.items, MongoTransactionItem{command: "del_collection", collection: collection, id: ""})
+}
+
 //Commit dbtransaction commit
 func (transaction *MongoTransaction) Commit() error {
 
@@ -568,6 +573,13 @@ func (transaction *MongoTransaction) Commit() error {
 
 				_, err := col.DeleteOne(sessCtx, filter, opts)
 
+				if err != nil {
+
+					return nil, err
+				}
+			} else if item.command == "del_collection" {
+
+				err := col.Drop(sessCtx)
 				if err != nil {
 
 					return nil, err

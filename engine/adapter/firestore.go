@@ -336,6 +336,11 @@ func (transaction *FirestoreTransaction) Del(collection string, id string) {
 	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "del", collection: collection, id: id})
 }
 
+func (transaction *FirestoreTransaction) DelCollection(collection string) {
+
+	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "del_collection", collection: collection, id: ""})
+}
+
 //Commit dbtransaction commit
 func (transaction *FirestoreTransaction) Commit() error {
 
@@ -359,6 +364,10 @@ func (transaction *FirestoreTransaction) Commit() error {
 		} else if item.command == "del" {
 
 			batch.Delete(col.Doc(item.id))
+
+		} else if item.command == "del_collection" {
+
+			return engine.NotImplement
 		}
 	}
 	_, err := batch.Commit(ctx)
