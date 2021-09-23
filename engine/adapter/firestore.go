@@ -336,11 +336,6 @@ func (transaction *FirestoreTransaction) Del(collection string, id string) {
 	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "del", collection: collection, id: id})
 }
 
-func (transaction *FirestoreTransaction) DelCollection(collection string) {
-
-	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "del_collection", collection: collection, id: ""})
-}
-
 //Commit dbtransaction commit
 func (transaction *FirestoreTransaction) Commit() error {
 

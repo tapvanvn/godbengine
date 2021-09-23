@@ -445,7 +445,15 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 	if query.SelectOne {
 
 		opts := options.FindOne().SetProjection(bson.M{"_id": 0})
+		for _, sort := range query.SortFields {
 
+			if sort.Inscrease {
+
+				opts = opts.SetSort(bson.M{sort.Field: 1})
+			} else {
+				opts = opts.SetSort(bson.M{sort.Field: -1})
+			}
+		}
 		queryResult.SelectOne = true
 		queryResult.SingleResult = col.FindOne(ctx, filter, opts)
 		err := queryResult.SingleResult.Err()
@@ -520,11 +528,6 @@ func (transaction *MongoTransaction) Put(collection string, document engine.Docu
 func (transaction *MongoTransaction) Del(collection string, id string) {
 
 	transaction.items = append(transaction.items, MongoTransactionItem{command: "del", collection: collection, id: id})
-}
-
-func (transaction *MongoTransaction) DelCollection(collection string) {
-
-	transaction.items = append(transaction.items, MongoTransactionItem{command: "del_collection", collection: collection, id: ""})
 }
 
 //Commit dbtransaction commit
