@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -170,20 +171,35 @@ func (pool *MongoPool) Init(connectionString string) error {
 
 	for _, client := range clients {
 
-		clientOptions := options.Client().ApplyURI(client)
+		var numClient = 1
+		hasNumClient := strings.Index(client, "[")
 
-		mongoClient, err := mongo.Connect(context.TODO(), clientOptions)
-		if err != nil {
-
-			log.Fatal(err)
+		if hasNumClient > 0 {
+			end := strings.Index(client, "]")
+			if end > hasNumClient {
+				numString := client[hasNumClient:end]
+				if tryParse, err := strconv.ParseInt(numString, 10, 64); err == nil {
+					numClient = int(tryParse)
+				}
+			}
+			client = client[0:hasNumClient]
 		}
+		for i := 0; i < numClient; i++ {
+			clientOptions := options.Client().ApplyURI(client)
 
-		fmt.Println("mongo new client ", client)
+			mongoClient, err := mongo.Connect(context.TODO(), clientOptions)
+			if err != nil {
 
-		client := &MongoClient{}
-		client.init(mongoClient)
+				log.Fatal(err)
+			}
 
-		pool.clients = append(pool.clients, client)
+			fmt.Println("mongo new client ", client)
+
+			client := &MongoClient{}
+			client.init(mongoClient)
+
+			pool.clients = append(pool.clients, client)
+		}
 	}
 	fmt.Println("mongo pool ", len(pool.clients), " clients.")
 
@@ -203,7 +219,7 @@ func (pool *MongoPool) InitWithDatabase(connectionString string, database string
 //Get get document
 func (pool *MongoPool) Get(collection string, id string, document interface{}) error {
 	now := time.Now()
-	col := pool.First().getCollection(pool.database, collection, true)
+	col := pool.SelectRobin().getCollection(pool.database, collection, true)
 	if col == nil {
 		return errors.New("get collection fail")
 	}
@@ -233,7 +249,7 @@ func (pool *MongoPool) Get(collection string, id string, document interface{}) e
 //Put document
 func (pool *MongoPool) Put(collection string, document engine.Document) error {
 	now := time.Now()
-	col := pool.First().getCollection(pool.database, collection, true)
+	col := pool.SelectRobin().getCollection(pool.database, collection, true)
 
 	if col == nil {
 
@@ -260,7 +276,7 @@ func (pool *MongoPool) Put(collection string, document engine.Document) error {
 //Del delete document
 func (pool *MongoPool) Del(collection string, id string) error {
 	now := time.Now()
-	col := pool.First().getCollection(pool.database, collection, true)
+	col := pool.SelectRobin().getCollection(pool.database, collection, true)
 
 	if col == nil {
 
@@ -299,7 +315,7 @@ func (pool *MongoPool) MakeTransaction() engine.DBTransaction {
 //Query query document
 func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 	now := time.Now()
-	col := pool.First().getCollection(pool.database, query.Collection, true)
+	col := pool.SelectRobin().getCollection(pool.database, query.Collection, true)
 
 	ctx := context.TODO()
 	queryResult := MongoQueryResult{Err: nil, Ctx: ctx}
