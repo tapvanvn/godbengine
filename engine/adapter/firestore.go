@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/tapvanvn/godbengine/engine"
@@ -338,7 +339,7 @@ func (transaction *FirestoreTransaction) Del(collection string, id string) {
 
 //Commit dbtransaction commit
 func (transaction *FirestoreTransaction) Commit() error {
-
+	now := time.Now()
 	batch := transaction.client.client.Batch()
 
 	ctx := context.Background()
@@ -366,7 +367,10 @@ func (transaction *FirestoreTransaction) Commit() error {
 		}
 	}
 	_, err := batch.Commit(ctx)
-
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb transcommit %0.2fms\n", float32(delta)/1_000_000)
+	}
 	return err
 }
 
@@ -382,6 +386,7 @@ type FirestoreTransaction struct {
 //Get get document
 func (pool *FirestorePool) Get(collection string, id string, document interface{}) error {
 
+	now := time.Now()
 	col := pool.First().getCollection(collection)
 
 	if col == nil {
@@ -397,11 +402,16 @@ func (pool *FirestorePool) Get(collection string, id string, document interface{
 		}
 	}
 	doc.DataTo(document)
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb get %s.%s %0.2fms\n", collection, id, float32(delta)/1_000_000)
+	}
 	return nil
 }
 
 //Put document
 func (pool *FirestorePool) Put(collection string, document engine.Document) error {
+	now := time.Now()
 	col := pool.First().getCollection(collection)
 	if col == nil {
 		return errors.New("get collection fail")
@@ -411,12 +421,16 @@ func (pool *FirestorePool) Put(collection string, document engine.Document) erro
 	if err != nil {
 		return err
 	}
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb put %s.%s %0.2fms\n", collection, document.GetID(), float32(delta)/1_000_000)
+	}
 	return nil
 }
 
 //Del delete document
 func (pool *FirestorePool) Del(collection string, id string) error {
-
+	now := time.Now()
 	col := pool.First().getCollection(collection)
 
 	if col == nil {
@@ -426,6 +440,10 @@ func (pool *FirestorePool) Del(collection string, id string) error {
 	_, err := col.Doc(id).Delete(ctx)
 	if err != nil {
 		return err
+	}
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb del %s.%s %0.2fms\n", collection, id, float32(delta)/1_000_000)
 	}
 	return nil
 }
@@ -484,7 +502,7 @@ func (pool *FirestorePool) fetchQueryWithOutPaging(query engine.DBQuery) (firest
 
 //Query query document
 func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
-
+	now := time.Now()
 	col := pool.First().getCollection(query.Collection)
 
 	ctx := context.TODO()
@@ -538,7 +556,10 @@ func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
 
 		//TODO: apply error and total
 	}
-
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb query %s %0.2fms\n", query.Collection, float32(delta)/1_000_000)
+	}
 	return queryResult
 }
 

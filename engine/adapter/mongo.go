@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/tapvanvn/godbengine/engine"
 	"go.mongodb.org/mongo-driver/bson"
@@ -201,7 +202,7 @@ func (pool *MongoPool) InitWithDatabase(connectionString string, database string
 
 //Get get document
 func (pool *MongoPool) Get(collection string, id string, document interface{}) error {
-
+	now := time.Now()
 	col := pool.First().getCollection(pool.database, collection, true)
 	if col == nil {
 		return errors.New("get collection fail")
@@ -222,13 +223,16 @@ func (pool *MongoPool) Get(collection string, id string, document interface{}) e
 			return err
 		}
 	}
-
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb get %s.%s %0.2fms\n", collection, id, float32(delta)/1_000_000)
+	}
 	return result.Decode(document)
 }
 
 //Put document
 func (pool *MongoPool) Put(collection string, document engine.Document) error {
-
+	now := time.Now()
 	col := pool.First().getCollection(pool.database, collection, true)
 
 	if col == nil {
@@ -246,13 +250,16 @@ func (pool *MongoPool) Put(collection string, document engine.Document) error {
 	}
 
 	_, err := col.UpdateOne(ctx, filter, update, opts)
-
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb put %s.%s %0.2fms\n", collection, document.GetID(), float32(delta)/1_000_000)
+	}
 	return err
 }
 
 //Del delete document
 func (pool *MongoPool) Del(collection string, id string) error {
-
+	now := time.Now()
 	col := pool.First().getCollection(pool.database, collection, true)
 
 	if col == nil {
@@ -266,7 +273,10 @@ func (pool *MongoPool) Del(collection string, id string) error {
 	filter := bson.M{"__id": id}
 
 	_, err := col.DeleteOne(ctx, filter, opts)
-
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb del %s.%s %0.2fms\n", collection, id, float32(delta)/1_000_000)
+	}
 	return err
 }
 
@@ -288,7 +298,7 @@ func (pool *MongoPool) MakeTransaction() engine.DBTransaction {
 
 //Query query document
 func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
-
+	now := time.Now()
 	col := pool.First().getCollection(pool.database, query.Collection, true)
 
 	ctx := context.TODO()
@@ -502,7 +512,10 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 		queryResult.Total = total
 
 	}
-
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb query %s %0.2fms\n", query.Collection, float32(delta)/1_000_000)
+	}
 	return queryResult
 }
 
@@ -532,7 +545,7 @@ func (transaction *MongoTransaction) Del(collection string, id string) {
 
 //Commit dbtransaction commit
 func (transaction *MongoTransaction) Commit() error {
-
+	now := time.Now()
 	ctx := context.Background()
 
 	fmt.Println("dbtransaction commit")
@@ -608,7 +621,10 @@ func (transaction *MongoTransaction) Commit() error {
 	}
 
 	fmt.Printf("result: %v\n", result)
-
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb transcommit %0.2fms\n", float32(delta)/1_000_000)
+	}
 	return nil
 }
 
