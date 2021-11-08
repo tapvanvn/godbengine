@@ -177,7 +177,7 @@ func (pool *MongoPool) Init(connectionString string) error {
 		if hasNumClient > 0 {
 			end := strings.Index(client, "]")
 			if end > hasNumClient {
-				numString := client[hasNumClient:end]
+				numString := client[hasNumClient+1 : end]
 				if tryParse, err := strconv.ParseInt(numString, 10, 64); err == nil {
 					numClient = int(tryParse)
 				}

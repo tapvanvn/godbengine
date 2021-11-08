@@ -1,6 +1,8 @@
 package test
 
 import (
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -61,5 +63,26 @@ func TestDocumentPool(t *testing.T) {
 
 		t.Fail()
 		return
+	}
+}
+
+func TestParse(t *testing.T) {
+	client := "abcd[5]"
+	var numClient = 1
+	hasNumClient := strings.Index(client, "[")
+
+	if hasNumClient > 0 {
+		end := strings.Index(client, "]")
+		if end > hasNumClient {
+			numString := client[hasNumClient+1 : end]
+
+			if tryParse, err := strconv.ParseInt(numString, 10, 64); err == nil {
+				numClient = int(tryParse)
+			}
+		}
+		client = client[0:hasNumClient]
+	}
+	if numClient != 5 {
+		t.Error(numClient, client)
 	}
 }
