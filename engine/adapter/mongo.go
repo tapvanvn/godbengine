@@ -188,6 +188,7 @@ func (pool *MongoPool) Init(connectionString string) error {
 			clientOptions := options.Client().ApplyURI(client)
 
 			mongoClient, err := mongo.Connect(context.TODO(), clientOptions)
+
 			if err != nil {
 
 				log.Fatal(err)
