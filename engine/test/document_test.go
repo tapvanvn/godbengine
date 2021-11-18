@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -67,7 +68,7 @@ func TestDocumentPool(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	client := "abcd&ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem[5]"
+	client := "abcd?ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem&a=b[5]"
 	var numClient = 1
 	hasNumClient := strings.Index(client, "[")
 
@@ -82,22 +83,36 @@ func TestParse(t *testing.T) {
 		}
 		client = client[0:hasNumClient]
 	}
-	parts := strings.Split(client, "&")
-	remains := []string{}
+	questionMark := strings.Index(client, "?")
 	hasSSL := false
 	sslPath := ""
+	if questionMark > 0 {
+		prefix := client[:questionMark]
+		client = client[questionMark+1:]
+		parts := strings.Split(client, "&")
+		remains := []string{}
 
-	for _, part := range parts {
-		if strings.HasPrefix(part, "ssl") {
-			if part == "ssl=true" {
-				hasSSL = true
-			} else if strings.HasPrefix(part, "ssl_ca_certs") {
-				sslPath = part[13:]
+		for _, part := range parts {
+			if strings.HasPrefix(part, "ssl") {
+				if part == "ssl=true" {
+					hasSSL = true
+				} else if strings.HasPrefix(part, "ssl_ca_certs") {
+					sslPath = part[13:]
+				}
+				continue
+			} else {
+				fmt.Println("part:", part)
 			}
-			continue
+			remains = append(remains, part)
 		}
-		remains = append(remains, part)
+		if len(remains) > 0 {
+			client = prefix + "?" + strings.Join(remains, "&")
+		} else {
+			client = prefix
+		}
+
 	}
+	fmt.Println("client:", client)
 	if !hasSSL || sslPath != "rds-combined-ca-bundle.pem" {
 		t.Error(sslPath)
 	}

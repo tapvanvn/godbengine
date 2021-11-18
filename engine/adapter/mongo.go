@@ -191,31 +191,43 @@ func (pool *MongoPool) Init(connectionString string) error {
 			client = client[0:hasNumClient]
 		}
 		//detect params
-		parts := strings.Split(client, "&")
-		remains := []string{}
-		hasSSL := false
-		sslPath := ""
+		questionMark := strings.Index(client, "?")
 		var tlsConfig *tls.Config = nil
-		//ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem
-		for _, part := range parts {
-			if strings.HasPrefix(part, "ssl") {
-				if part == "ssl=true" {
-					hasSSL = true
-				} else if strings.HasPrefix(part, "ssl_ca_certs") {
-					sslPath = part[13:]
-				}
-				continue
-			}
-			remains = append(remains, part)
-		}
-		client = strings.Join(remains, "&")
-		if hasSSL {
-			tlsConfig, err = getCustomTLSConfig(sslPath)
-			if err != nil {
 
-				log.Fatal(err)
+		if questionMark > 0 {
+			prefix := client[:questionMark]
+			client = client[questionMark+1:]
+			parts := strings.Split(client, "&")
+			remains := []string{}
+			hasSSL := false
+			sslPath := ""
+
+			//ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem
+			for _, part := range parts {
+				if strings.HasPrefix(part, "ssl") {
+					if part == "ssl=true" {
+						hasSSL = true
+					} else if strings.HasPrefix(part, "ssl_ca_certs") {
+						sslPath = part[13:]
+					}
+					continue
+				}
+				remains = append(remains, part)
+			}
+			if len(remains) > 0 {
+				client = prefix + "?" + strings.Join(remains, "&")
+			} else {
+				client = prefix
+			}
+			if hasSSL {
+				tlsConfig, err = getCustomTLSConfig(sslPath)
+				if err != nil {
+
+					log.Fatal(err)
+				}
 			}
 		}
+
 		for i := 0; i < numClient; i++ {
 
 			clientOptions := options.Client().ApplyURI(client)
@@ -243,6 +255,7 @@ func (pool *MongoPool) Init(connectionString string) error {
 }
 
 func getCustomTLSConfig(caFile string) (*tls.Config, error) {
+	fmt.Println("load TLS Config ", caFile)
 	tlsConfig := new(tls.Config)
 	certs, err := ioutil.ReadFile(caFile)
 
