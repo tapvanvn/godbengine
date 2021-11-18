@@ -2,8 +2,11 @@ package adapter
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"strconv"
 	"strings"
@@ -168,6 +171,7 @@ func (pool *MongoPool) Init(connectionString string) error {
 	clients := strings.Split(connectionString, ",")
 
 	pool.database = "default"
+	var err error = nil
 
 	for _, client := range clients {
 
@@ -175,8 +179,10 @@ func (pool *MongoPool) Init(connectionString string) error {
 		hasNumClient := strings.Index(client, "[")
 
 		if hasNumClient > 0 {
+
 			end := strings.Index(client, "]")
 			if end > hasNumClient {
+
 				numString := client[hasNumClient+1 : end]
 				if tryParse, err := strconv.ParseInt(numString, 10, 64); err == nil {
 					numClient = int(tryParse)
@@ -184,9 +190,37 @@ func (pool *MongoPool) Init(connectionString string) error {
 			}
 			client = client[0:hasNumClient]
 		}
-		for i := 0; i < numClient; i++ {
-			clientOptions := options.Client().ApplyURI(client)
+		//detect params
+		parts := strings.Split(client, "&")
+		remains := []string{}
+		hasSSL := false
+		sslPath := ""
+		var tlsConfig *tls.Config = nil
+		//ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem
+		for _, part := range parts {
+			if strings.HasPrefix(part, "ssl") {
+				if part == "ssl=true" {
+					hasSSL = true
+				} else if strings.HasPrefix(part, "ssl_ca_certs") {
+					sslPath = part[13:]
+				}
+				continue
+			}
+			remains = append(remains, part)
+		}
+		if hasSSL {
+			tlsConfig, err = getCustomTLSConfig(sslPath)
+			if err != nil {
 
+				log.Fatal(err)
+			}
+		}
+		for i := 0; i < numClient; i++ {
+
+			clientOptions := options.Client().ApplyURI(client)
+			if tlsConfig != nil {
+				clientOptions.SetTLSConfig(tlsConfig)
+			}
 			mongoClient, err := mongo.Connect(context.TODO(), clientOptions)
 
 			if err != nil {
@@ -205,6 +239,24 @@ func (pool *MongoPool) Init(connectionString string) error {
 	fmt.Println("mongo pool ", len(pool.clients), " clients.")
 
 	return nil
+}
+
+func getCustomTLSConfig(caFile string) (*tls.Config, error) {
+	tlsConfig := new(tls.Config)
+	certs, err := ioutil.ReadFile(caFile)
+
+	if err != nil {
+		return tlsConfig, err
+	}
+
+	tlsConfig.RootCAs = x509.NewCertPool()
+	ok := tlsConfig.RootCAs.AppendCertsFromPEM(certs)
+
+	if !ok {
+		return tlsConfig, errors.New("Failed parsing pem file")
+	}
+
+	return tlsConfig, nil
 }
 
 //InitWithDatabase init with database name

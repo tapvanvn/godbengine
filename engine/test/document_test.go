@@ -67,7 +67,7 @@ func TestDocumentPool(t *testing.T) {
 }
 
 func TestParse(t *testing.T) {
-	client := "abcd[5]"
+	client := "abcd&ssl=true&ssl_ca_certs=rds-combined-ca-bundle.pem[5]"
 	var numClient = 1
 	hasNumClient := strings.Index(client, "[")
 
@@ -81,6 +81,25 @@ func TestParse(t *testing.T) {
 			}
 		}
 		client = client[0:hasNumClient]
+	}
+	parts := strings.Split(client, "&")
+	remains := []string{}
+	hasSSL := false
+	sslPath := ""
+
+	for _, part := range parts {
+		if strings.HasPrefix(part, "ssl") {
+			if part == "ssl=true" {
+				hasSSL = true
+			} else if strings.HasPrefix(part, "ssl_ca_certs") {
+				sslPath = part[13:]
+			}
+			continue
+		}
+		remains = append(remains, part)
+	}
+	if !hasSSL || sslPath != "rds-combined-ca-bundle.pem" {
+		t.Error(sslPath)
 	}
 	if numClient != 5 {
 		t.Error(numClient, client)
