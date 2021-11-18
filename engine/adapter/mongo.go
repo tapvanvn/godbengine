@@ -208,6 +208,7 @@ func (pool *MongoPool) Init(connectionString string) error {
 			}
 			remains = append(remains, part)
 		}
+		client = strings.Join(remains, "&")
 		if hasSSL {
 			tlsConfig, err = getCustomTLSConfig(sslPath)
 			if err != nil {
