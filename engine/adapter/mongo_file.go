@@ -40,3 +40,8 @@ func (pool MongoFilePool) Write(path string, content *[]byte) error {
 
 	return pool.mongoPool.Put(pool.collection, &file)
 }
+
+func (pool MongoFilePool) Delete(path string) error {
+
+	return pool.mongoPool.Del(pool.collection, path)
+}
