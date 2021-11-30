@@ -29,9 +29,13 @@ func (db *FileDocDB) Init(connectionString string) error {
 
 //Insert a document
 func (db *FileDocDB) Put(collection string, document engine.Document) error {
+
 	path := fmt.Sprintf("/%s/%s.json", collection, document.GetID())
+
 	content, err := json.Marshal(document)
+
 	if err != nil {
+
 		return err
 	}
 	return db.fileClient.Write(path, &content)
@@ -165,13 +169,14 @@ func (db *FileDocDB) GetAllDocumentIDs(collectionName string) ([]string, error) 
 
 			continue
 		}
-		part := strings.Split(file.Name(), ".")
+		fname := file.Name()
 
-		if len(part) != 2 || part[1] != "json" {
-
+		rpos := strings.LastIndex(fname, ".")
+		if rpos <= 0 || fname[rpos+1:] != "json" {
 			continue
 		}
-		ids = append(ids, part[0])
+
+		ids = append(ids, fname[:rpos])
 	}
 	return ids, nil
 }
