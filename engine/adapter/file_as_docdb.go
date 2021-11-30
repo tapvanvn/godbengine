@@ -146,7 +146,7 @@ func (transaction *FileDocTransaction) Commit() error {
 //MARK: external function
 func (db *FileDocDB) GetCollectionPath(collectionName string) string {
 
-	path := fmt.Sprintf("/%s", collectionName)
+	path := fmt.Sprintf("%s/%s", db.fileClient.absolutePath, collectionName)
 
 	return path
 }
