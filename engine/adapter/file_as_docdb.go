@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/tapvanvn/godbengine/engine"
 )
@@ -55,8 +56,11 @@ func (db *FileDocDB) IsNoRecordError(err error) bool {
 
 //all query in transaction must be all done or all fail.
 func (db *FileDocDB) MakeTransaction() engine.DBTransaction {
-	log.Panic(engine.NotImplement)
-	return nil
+
+	return &FileDocTransaction{
+		db:    db,
+		items: make([]FileDocDBTransactionItem, 0),
+	}
 }
 
 //Query query
@@ -73,4 +77,61 @@ func (db *FileDocDB) CleanPagingInfo(query engine.DBQuery) {
 func (db *FileDocDB) DelCollection(collection string) error {
 	path := fmt.Sprintf("/%s", collection)
 	return db.fileClient.Delete(path)
+}
+
+type FileDocDBTransactionItem struct {
+	command    string
+	collection string
+	document   engine.Document
+	id         string
+}
+
+//MongoTransaction apply DBTransaction
+type FileDocTransaction struct {
+	items []FileDocDBTransactionItem
+	db    *FileDocDB
+}
+
+//MARK: MongoTransaction
+
+//Begin dbtransaction begin
+func (transaction *FileDocTransaction) Begin() {
+
+}
+
+//Put dbtransaction put
+func (transaction *FileDocTransaction) Put(collection string, document engine.Document) {
+
+	transaction.items = append(transaction.items, FileDocDBTransactionItem{command: "put", collection: collection, document: document})
+}
+
+//Del dbtransaction delete
+func (transaction *FileDocTransaction) Del(collection string, id string) {
+
+	transaction.items = append(transaction.items, FileDocDBTransactionItem{command: "del", collection: collection, id: id})
+}
+
+//Commit dbtransaction commit
+func (transaction *FileDocTransaction) Commit() error {
+	now := time.Now()
+
+	fmt.Println("dbtransaction commit")
+
+	for _, item := range transaction.items {
+
+		if item.command == "put" {
+
+			transaction.db.Put(item.collection, item.document)
+
+		} else if item.command == "del" {
+
+			transaction.db.Del(item.collection, item.id)
+		}
+	}
+
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb transcommit %0.2fms\n", float32(delta)/1_000_000)
+	}
+	return nil
 }
