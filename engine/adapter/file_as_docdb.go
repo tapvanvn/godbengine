@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/tapvanvn/godbengine/engine"
@@ -113,6 +114,7 @@ func (transaction *FileDocTransaction) Del(collection string, id string) {
 
 //Commit dbtransaction commit
 func (transaction *FileDocTransaction) Commit() error {
+
 	now := time.Now()
 
 	fmt.Println("dbtransaction commit")
@@ -130,8 +132,46 @@ func (transaction *FileDocTransaction) Commit() error {
 	}
 
 	if __measurement {
+
 		delta := time.Now().Sub(now).Nanoseconds()
 		fmt.Printf("mersure docdb transcommit %0.2fms\n", float32(delta)/1_000_000)
 	}
 	return nil
+}
+
+//MARK: external function
+func (db *FileDocDB) GetCollectionPath(collectionName string) string {
+
+	path := fmt.Sprintf("/%s", collectionName)
+
+	return path
+}
+
+func (db *FileDocDB) GetAllDocumentIDs(collectionName string) ([]string, error) {
+
+	path := db.GetCollectionPath(collectionName)
+
+	files, err := os.ReadDir(path)
+
+	if err != nil {
+
+		return nil, err
+	}
+	ids := []string{}
+
+	for _, file := range files {
+
+		if file.IsDir() {
+
+			continue
+		}
+		part := strings.Split(file.Name(), ".")
+
+		if len(part) != 2 || part[1] != "json" {
+
+			continue
+		}
+		ids = append(ids, part[0])
+	}
+	return ids, nil
 }
