@@ -19,10 +19,11 @@ type LocalMemDB struct {
 	muxInt64      sync.Mutex
 }
 
-func (memdb *LocalMemDB) Init() {
+func (memdb *LocalMemDB) Init(connectionString string) error {
 
 	memdb.storageInt64 = map[string]int64{}
 	memdb.storageString = map[string]string{}
+	return nil
 }
 
 //Set set key
