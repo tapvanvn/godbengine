@@ -592,3 +592,8 @@ func (pool *FirestorePool) DelCollection(collection string) error {
 
 	return engine.NotImplement
 }
+func (pool *FirestorePool) CreateCollection(collection string) error {
+
+	//Firestore auto create collection if is's not existed
+	return nil
+}

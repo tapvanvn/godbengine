@@ -724,3 +724,8 @@ func (pool *MongoPool) DelCollection(collection string) error {
 	}
 	return err
 }
+
+func (pool *MongoPool) CreateCollection(collection string) error {
+	ctx := context.Background()
+	return pool.First().client.Database(pool.database).CreateCollection(ctx, collection)
+}

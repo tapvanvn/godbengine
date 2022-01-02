@@ -46,5 +46,6 @@ type DocumentPool interface {
 	CleanPagingInfo(query DBQuery)
 
 	//MARK: Work with collection
+	CreateCollection(collection string) error
 	DelCollection(collection string) error
 }
