@@ -151,7 +151,7 @@ func (memdb *LocalMemDB) Get(key string) (string, error) {
 		memdb.muxExpire.Lock()
 		defer memdb.muxExpire.Unlock()
 		if exp, ok := memdb.expire[key]; ok {
-			if time.Now().Unix() < exp {
+			if time.Now().Unix() > exp {
 				return val, nil
 			}
 		} else {
@@ -167,7 +167,7 @@ func (memdb *LocalMemDB) GetInt(key string) (int64, error) {
 		memdb.muxExpire.Lock()
 		defer memdb.muxExpire.Unlock()
 		if exp, ok := memdb.expire[key]; ok {
-			if time.Now().Unix() < exp {
+			if time.Now().Unix() > exp {
 				return val, nil
 			}
 		} else {
