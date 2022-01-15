@@ -25,6 +25,7 @@ func (memdb *LocalMemDB) Init(connectionString string) error {
 
 	memdb.storageInt64 = map[string]int64{}
 	memdb.storageString = map[string]string{}
+	memdb.expire = map[string]int64{}
 	return nil
 }
 
