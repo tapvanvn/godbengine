@@ -15,8 +15,10 @@ type value struct {
 type LocalMemDB struct {
 	storageString map[string]string
 	storageInt64  map[string]int64
+	expire        map[string]int64
 	muxString     sync.Mutex
 	muxInt64      sync.Mutex
+	muxExpire     sync.Mutex
 }
 
 func (memdb *LocalMemDB) Init(connectionString string) error {
@@ -111,9 +113,22 @@ func (memdb *LocalMemDB) DecrIntByShading(key string, num int64) (int64, error) 
 
 //SetExpire set key with expire
 func (memdb *LocalMemDB) SetExpire(key string, value string, d time.Duration) error {
+	memdb.muxString.Lock()
+	defer memdb.muxString.Unlock()
+	memdb.storageString[key] = value
+
+	memdb.muxExpire.Lock()
+	defer memdb.muxExpire.Unlock()
+	memdb.expire[key] = int64(d)
 	return nil
 }
 func (memdb *LocalMemDB) SetIntExpire(key string, value int64, d time.Duration) error {
+	memdb.muxInt64.Lock()
+	defer memdb.muxInt64.Unlock()
+	memdb.storageInt64[key] = value
+	memdb.muxExpire.Lock()
+	defer memdb.muxExpire.Unlock()
+	memdb.expire[key] = int64(d)
 	return nil
 }
 
@@ -132,7 +147,15 @@ func (memdb *LocalMemDB) Get(key string) (string, error) {
 	memdb.muxString.Lock()
 	defer memdb.muxString.Unlock()
 	if val, ok := memdb.storageString[key]; ok {
-		return val, nil
+		memdb.muxExpire.Lock()
+		defer memdb.muxExpire.Unlock()
+		if exp, ok := memdb.expire[key]; ok {
+			if time.Now().Unix() < exp {
+				return val, nil
+			}
+		} else {
+			return val, nil
+		}
 	}
 	return "", nil
 }
@@ -140,7 +163,15 @@ func (memdb *LocalMemDB) GetInt(key string) (int64, error) {
 	memdb.muxInt64.Lock()
 	defer memdb.muxInt64.Unlock()
 	if val, ok := memdb.storageInt64[key]; ok {
-		return val, nil
+		memdb.muxExpire.Lock()
+		defer memdb.muxExpire.Unlock()
+		if exp, ok := memdb.expire[key]; ok {
+			if time.Now().Unix() < exp {
+				return val, nil
+			}
+		} else {
+			return val, nil
+		}
 	}
 	return 0, nil
 }
