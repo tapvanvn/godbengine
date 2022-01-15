@@ -120,7 +120,7 @@ func (memdb *LocalMemDB) SetExpire(key string, value string, d time.Duration) er
 
 	memdb.muxExpire.Lock()
 	defer memdb.muxExpire.Unlock()
-	memdb.expire[key] = int64(d)
+	memdb.expire[key] = time.Now().Unix() + int64(d)
 	return nil
 }
 func (memdb *LocalMemDB) SetIntExpire(key string, value int64, d time.Duration) error {
@@ -129,7 +129,7 @@ func (memdb *LocalMemDB) SetIntExpire(key string, value int64, d time.Duration) 
 	memdb.storageInt64[key] = value
 	memdb.muxExpire.Lock()
 	defer memdb.muxExpire.Unlock()
-	memdb.expire[key] = int64(d)
+	memdb.expire[key] = time.Now().Unix() + int64(d)
 	return nil
 }
 
@@ -151,7 +151,7 @@ func (memdb *LocalMemDB) Get(key string) (string, error) {
 		memdb.muxExpire.Lock()
 		defer memdb.muxExpire.Unlock()
 		if exp, ok := memdb.expire[key]; ok {
-			if time.Now().Unix() > exp {
+			if time.Now().Unix() < exp {
 				return val, nil
 			}
 		} else {
@@ -167,7 +167,7 @@ func (memdb *LocalMemDB) GetInt(key string) (int64, error) {
 		memdb.muxExpire.Lock()
 		defer memdb.muxExpire.Unlock()
 		if exp, ok := memdb.expire[key]; ok {
-			if time.Now().Unix() > exp {
+			if time.Now().Unix() < exp {
 				return val, nil
 			}
 		} else {
