@@ -460,106 +460,108 @@ func (pool *FirestorePool) fetchQueryWithOutPaging(query engine.DBQuery) (firest
 	col := pool.First().getCollection(query.Collection)
 
 	var fsQuery firestore.Query = col.Query
+	/*
+		for _, filterItem := range query.Fields {
 
-	for _, filterItem := range query.Fields {
+			if filterItem.Operator == "=" {
 
-		if filterItem.Operator == "=" {
+				fsQuery = fsQuery.Where(filterItem.Field, "==", filterItem.Value)
 
-			fsQuery = fsQuery.Where(filterItem.Field, "==", filterItem.Value)
+			} else if filterItem.Operator == "!=" ||
+				filterItem.Operator == ">" ||
+				filterItem.Operator == ">=" ||
+				filterItem.Operator == "<" ||
+				filterItem.Operator == "<=" ||
+				filterItem.Operator == "in" {
 
-		} else if filterItem.Operator == "!=" ||
-			filterItem.Operator == ">" ||
-			filterItem.Operator == ">=" ||
-			filterItem.Operator == "<" ||
-			filterItem.Operator == "<=" ||
-			filterItem.Operator == "in" {
+				fsQuery = fsQuery.Where(filterItem.Field, filterItem.Operator, filterItem.Value)
 
-			fsQuery = fsQuery.Where(filterItem.Field, filterItem.Operator, filterItem.Value)
+			} else if filterItem.Operator == "+=" ||
+				filterItem.Operator == "+<" ||
+				filterItem.Operator == "+>" ||
+				filterItem.Operator == "regex" {
 
-		} else if filterItem.Operator == "+=" ||
-			filterItem.Operator == "+<" ||
-			filterItem.Operator == "+>" ||
-			filterItem.Operator == "regex" {
-
-			return fsQuery, false
+				return fsQuery, false
+			}
 		}
-	}
 
-	for _, sort := range query.SortFields {
+		for _, sort := range query.SortFields {
 
-		if sort.Inscrease {
+			if sort.Inscrease {
 
-			fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
+				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Asc)
 
-		} else {
+			} else {
 
-			fsQuery = fsQuery.OrderBy(sort.Field, firestore.Desc)
+				fsQuery = fsQuery.OrderBy(sort.Field, firestore.Desc)
+			}
 		}
-	}
 
+		return fsQuery, true
+	*/
 	return fsQuery, true
 }
 
 //Query query document
 func (pool *FirestorePool) Query(query engine.DBQuery) engine.DBQueryResult {
-	now := time.Now()
-	col := pool.First().getCollection(query.Collection)
+	//now := time.Now()
+	//col := pool.First().getCollection(query.Collection)
 
 	ctx := context.TODO()
-	queryResult := &FirestoreQueryResult{Err: nil, Ctx: ctx}
+	queryResult := &FirestoreQueryResult{Err: engine.NotImplement, Ctx: ctx}
+	/*
+		if col == nil {
 
-	if col == nil {
+			queryResult.Err = errors.New("get collection fail")
 
-		queryResult.Err = errors.New("get collection fail")
-
-		return queryResult
-	}
-
-	fsQuery, complete := pool.fetchQueryWithOutPaging(query)
-	if !complete {
-		queryResult.isAvailable = false
-		return queryResult
-	}
-
-	if query.SelectOne {
-
-		queryResult.SelectOne = true
-		queryResult.isAvailable = true
-		fsQuery = fsQuery.Limit(1)
-		queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
-
-	} else {
-
-		queryResult.SelectOne = false
-		paging := query.GetPaging()
-		if paging != nil && paging.PageSize > 0 {
-
-			//Process Paging
-			helperItem := getPagingHelper(query)
-
-			adatpPagingQuery, hasPage := helperItem.adaptPaging(query, pool, fsQuery)
-
-			if hasPage {
-
-				fsQuery = adatpPagingQuery
-				queryResult.isAvailable = true
-				queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
-
-			} else {
-				fmt.Println("no page", paging.PageNum)
-				queryResult.isAvailable = false
-			}
-		} else {
-			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
-			queryResult.isAvailable = true
+			return queryResult
 		}
 
-		//TODO: apply error and total
-	}
-	if __measurement {
-		delta := time.Now().Sub(now).Nanoseconds()
-		fmt.Printf("mersure docdb query %s %0.2fms\n", query.Collection, float32(delta)/1_000_000)
-	}
+		fsQuery, complete := pool.fetchQueryWithOutPaging(query)
+		if !complete {
+			queryResult.isAvailable = false
+			return queryResult
+		}
+
+		if query.SelectOne {
+
+			queryResult.SelectOne = true
+			queryResult.isAvailable = true
+			fsQuery = fsQuery.Limit(1)
+			queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+
+		} else {
+
+			queryResult.SelectOne = false
+			paging := query.GetPaging()
+			if paging != nil && paging.PageSize > 0 {
+
+				//Process Paging
+				helperItem := getPagingHelper(query)
+
+				adatpPagingQuery, hasPage := helperItem.adaptPaging(query, pool, fsQuery)
+
+				if hasPage {
+
+					fsQuery = adatpPagingQuery
+					queryResult.isAvailable = true
+					queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+
+				} else {
+					fmt.Println("no page", paging.PageNum)
+					queryResult.isAvailable = false
+				}
+			} else {
+				queryResult.Iter = fsQuery.Documents(queryResult.Ctx)
+				queryResult.isAvailable = true
+			}
+
+			//TODO: apply error and total
+		}
+		if __measurement {
+			delta := time.Now().Sub(now).Nanoseconds()
+			fmt.Printf("mersure docdb query %s %0.2fms\n", query.Collection, float32(delta)/1_000_000)
+		}*/
 	return queryResult
 }
 

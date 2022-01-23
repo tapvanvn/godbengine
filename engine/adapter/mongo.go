@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tapvanvn/gocondition"
 	"github.com/tapvanvn/godbengine/engine"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -379,8 +380,154 @@ func (pool *MongoPool) MakeTransaction() engine.DBTransaction {
 	return &trans
 }
 
+func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M {
+
+	if filterItem.Operator == "=" {
+
+		return bson.M{filterItem.Field: filterItem.Value}
+
+	} else if filterItem.Operator == "!=" {
+
+		return bson.M{filterItem.Field: bson.M{
+
+			"$ne": filterItem.Value,
+		}}
+
+	} else if filterItem.Operator == ">" {
+
+		return bson.M{
+
+			"$gt": filterItem.Value,
+		}
+
+	} else if filterItem.Operator == "<" {
+
+		return bson.M{
+
+			"$lt": filterItem.Value,
+		}
+
+	} else if filterItem.Operator == "+=" {
+
+		return bson.M{
+
+			"$or": bson.A{
+				bson.M{filterItem.Field: bson.M{"$exists": false}},
+				bson.M{filterItem.Field: filterItem.Value},
+			},
+		}
+
+	} else if filterItem.Operator == "+<" {
+
+		return bson.M{
+
+			"$or": bson.A{
+				bson.M{filterItem.Field: bson.M{"$exists": false}},
+				bson.M{filterItem.Field: bson.M{
+
+					"$lt": filterItem.Value,
+				}},
+			},
+		}
+
+	} else if filterItem.Operator == "+>" {
+
+		return bson.M{
+
+			"$or": bson.A{
+				bson.M{filterItem.Field: bson.M{"$exists": false}},
+				bson.M{filterItem.Field: bson.M{
+
+					"$gt": filterItem.Value,
+				}},
+			},
+		}
+
+	} else if filterItem.Operator == "regex" {
+
+		pattern := fmt.Sprintf("%v", filterItem.FieldValue)
+
+		return bson.M{
+
+			"$regex": primitive.Regex{Pattern: pattern},
+		}
+
+	} else if filterItem.Operator == "in" {
+
+		return bson.M{
+
+			filterItem.Field: bson.M{
+
+				"$in": filterItem.Value,
+			},
+		}
+	}
+	return bson.M{}
+}
+
+func (pool *MongoPool) buildQueryAnd(ruleSet *gocondition.RuleSet) bson.M {
+
+	filterA := bson.A{}
+
+	for _, filterItem := range ruleSet.Children {
+
+		switch filterItem.(type) {
+		case *engine.DBFilterItem:
+			filterA = append(filterA, pool.buildQueryFilter(filterItem.(*engine.DBFilterItem)))
+			break
+		case *gocondition.RuleSet:
+			ruleSet := filterItem.(*gocondition.RuleSet)
+			if ruleSet.IsAnd() {
+				filterA = append(filterA, pool.buildQueryAnd(ruleSet))
+			} else {
+				filterA = append(filterA, pool.buildQueryOr(ruleSet))
+			}
+			break
+		}
+	}
+
+	filter := bson.M{}
+
+	if len(filterA) > 0 {
+
+		filter["$and"] = filterA
+	}
+	return filter
+}
+
+func (pool *MongoPool) buildQueryOr(ruleSet *gocondition.RuleSet) bson.M {
+
+	filterA := bson.A{}
+
+	for _, filterItem := range ruleSet.Children {
+
+		switch filterItem.(type) {
+		case *engine.DBFilterItem:
+			filterA = append(filterA, pool.buildQueryFilter(filterItem.(*engine.DBFilterItem)))
+			break
+		case *gocondition.RuleSet:
+			ruleSet := filterItem.(*gocondition.RuleSet)
+			if ruleSet.IsAnd() {
+				filterA = append(filterA, pool.buildQueryAnd(ruleSet))
+			} else {
+
+			}
+			break
+		}
+	}
+
+	filter := bson.M{}
+
+	if len(filterA) > 0 {
+
+		filter["$or"] = filterA
+	}
+	return filter
+}
+
 //Query query document
 func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
+
 	now := time.Now()
 	col := pool.SelectRobin().getCollection(pool.database, query.Collection, true)
 
@@ -394,146 +541,7 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 		return queryResult
 	}
 
-	filterA := bson.A{}
-
-	currFilter := bson.M{}
-
-	for _, filterItem := range query.Fields {
-
-		if filterItem.Operator == "=" {
-
-			if len(currFilter) > 0 {
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{filterItem.Field: filterItem.Value})
-
-			currFilter = bson.M{}
-
-		} else if filterItem.Operator == "!=" {
-
-			if len(currFilter) > 0 {
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{filterItem.Field: bson.M{
-
-				"$ne": filterItem.Value,
-			}})
-
-			currFilter = bson.M{}
-
-		} else if filterItem.Operator == ">" {
-
-			if len(currFilter) > 0 {
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{filterItem.Field: bson.M{
-
-				"$gt": filterItem.Value,
-			}})
-
-			currFilter = bson.M{}
-
-		} else if filterItem.Operator == "<" {
-
-			if len(currFilter) > 0 {
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{filterItem.Field: bson.M{
-
-				"$lt": filterItem.Value,
-			}})
-
-			currFilter = bson.M{}
-		} else if filterItem.Operator == "+=" {
-
-			if len(currFilter) > 0 {
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{
-
-				"$or": bson.A{
-					bson.M{filterItem.Field: bson.M{"$exists": false}},
-					bson.M{filterItem.Field: filterItem.Value},
-				},
-			})
-
-			currFilter = bson.M{}
-
-		} else if filterItem.Operator == "+<" {
-
-			if len(currFilter) > 0 {
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{
-
-				"$or": bson.A{
-					bson.M{filterItem.Field: bson.M{"$exists": false}},
-					bson.M{filterItem.Field: bson.M{
-
-						"$lt": filterItem.Value,
-					}},
-				},
-			})
-
-			currFilter = bson.M{}
-		} else if filterItem.Operator == "+>" {
-
-			if len(currFilter) > 0 {
-
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{
-
-				"$or": bson.A{
-					bson.M{filterItem.Field: bson.M{"$exists": false}},
-					bson.M{filterItem.Field: bson.M{
-
-						"$gt": filterItem.Value,
-					}},
-				},
-			})
-
-			currFilter = bson.M{}
-		} else if filterItem.Operator == "regex" {
-
-			pattern := fmt.Sprintf("%v", filterItem.Value)
-
-			currFilter[filterItem.Field] = bson.M{
-
-				"$regex": primitive.Regex{Pattern: pattern},
-			}
-		} else if filterItem.Operator == "in" {
-			if len(currFilter) > 0 {
-				filterA = append(filterA, currFilter)
-			}
-
-			filterA = append(filterA, bson.M{
-
-				filterItem.Field: bson.M{
-
-					"$in": filterItem.Value,
-				},
-			})
-
-			currFilter = bson.M{}
-		}
-		if len(currFilter) > 0 {
-			filterA = append(filterA, currFilter)
-		}
-	}
-	filter := bson.M{}
-
-	if len(filterA) > 0 {
-
-		filter["$and"] = filterA
-	}
+	filter := pool.buildQueryAnd(query.Condition)
 
 	if query.SelectOne {
 
@@ -593,7 +601,6 @@ func (pool *MongoPool) Query(query engine.DBQuery) engine.DBQueryResult {
 		queryResult.Cursor = result
 		queryResult.isAvailable = true
 		queryResult.Total = total
-
 	}
 	if __measurement {
 		delta := time.Now().Sub(now).Nanoseconds()

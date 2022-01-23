@@ -4,13 +4,19 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+
+	"github.com/tapvanvn/gocondition"
 )
 
 //FilterItem filter item
-type dbFilterItem struct {
-	Field    string
-	Operator string
-	Value    interface{}
+type DBFilterItem struct {
+	Field      string
+	Operator   string
+	FieldValue interface{}
+}
+
+func (DBFilterItem) Value(context interface{}) bool {
+	return false
 }
 
 type dbSortItem struct {
@@ -21,7 +27,7 @@ type dbSortItem struct {
 //DBQuery query
 type DBQuery struct {
 	Collection string
-	Fields     []dbFilterItem
+	Condition  *gocondition.RuleSet
 	SelectOne  bool
 	SortFields []dbSortItem
 	paging     *DBQueryPage
@@ -39,7 +45,10 @@ func MakeDBQuery(collection string, selectOne bool) DBQuery {
 
 	query := DBQuery{
 		Collection: collection,
-		Fields:     []dbFilterItem{},
+		Condition: &gocondition.RuleSet{
+			Type:     gocondition.RuleAnd,
+			Children: make([]gocondition.IRule, 0),
+		},
 		SelectOne:  selectOne,
 		SortFields: []dbSortItem{},
 	}
@@ -51,10 +60,10 @@ func MakeDBQuery(collection string, selectOne bool) DBQuery {
 //value must be a string, number, bool
 func (query *DBQuery) Filter(field string, compareOperator string, value interface{}) {
 
-	filterItem := dbFilterItem{
-		Field:    field,
-		Operator: compareOperator,
-		Value:    value,
+	filterItem := DBFilterItem{
+		Field:      field,
+		Operator:   compareOperator,
+		FieldValue: value,
 	}
 	valSignature := ""
 	if test, err := json.Marshal(value); err == nil {
@@ -65,8 +74,12 @@ func (query *DBQuery) Filter(field string, compareOperator string, value interfa
 
 	//TODO: verify operator, value
 
-	query.Fields = append(query.Fields, filterItem)
-
+	/*query.Fields = append(query.Fields, &gocondition.RuleSet{
+	Type:gocondition.RuleAnd,
+	Children:[]gocondition.IRule{
+		filterItem,
+	})*/
+	_ = filterItem
 }
 
 func (query *DBQuery) Sort(field string, insc bool) {
