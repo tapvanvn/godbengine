@@ -60,7 +60,7 @@ func MakeDBQuery(collection string, selectOne bool) DBQuery {
 //value must be a string, number, bool
 func (query *DBQuery) Filter(field string, compareOperator string, value interface{}) {
 
-	filterItem := DBFilterItem{
+	filterItem := &DBFilterItem{
 		Field:      field,
 		Operator:   compareOperator,
 		FieldValue: value,
@@ -74,12 +74,7 @@ func (query *DBQuery) Filter(field string, compareOperator string, value interfa
 
 	//TODO: verify operator, value
 
-	query.Condition.Children = append(query.Condition.Children, &gocondition.RuleSet{
-		Type: gocondition.RuleAnd,
-		Children: []gocondition.IRule{
-			filterItem,
-		},
-	})
+	query.Condition.Children = append(query.Condition.Children, filterItem)
 
 }
 func (query *DBQuery) FilterSet(ruleSet *gocondition.RuleSet) {
