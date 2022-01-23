@@ -74,12 +74,18 @@ func (query *DBQuery) Filter(field string, compareOperator string, value interfa
 
 	//TODO: verify operator, value
 
-	/*query.Fields = append(query.Fields, &gocondition.RuleSet{
-	Type:gocondition.RuleAnd,
-	Children:[]gocondition.IRule{
-		filterItem,
-	})*/
-	_ = filterItem
+	query.Condition.Children = append(query.Condition.Children, &gocondition.RuleSet{
+		Type: gocondition.RuleAnd,
+		Children: []gocondition.IRule{
+			filterItem,
+		},
+	})
+
+}
+func (query *DBQuery) FilterSet(ruleSet *gocondition.RuleSet) {
+
+	//TODO: update signature
+	query.Condition.Children = append(query.Condition.Children, ruleSet)
 }
 
 func (query *DBQuery) Sort(field string, insc bool) {
