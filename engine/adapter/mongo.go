@@ -467,6 +467,13 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 
 func (pool *MongoPool) buildQueryAnd(ruleSet *gocondition.RuleSet) bson.M {
 
+	filter := bson.M{}
+
+	if len(ruleSet.Children) == 0 {
+
+		return filter
+	}
+
 	filterA := bson.A{}
 
 	for _, filterItem := range ruleSet.Children {
@@ -486,17 +493,24 @@ func (pool *MongoPool) buildQueryAnd(ruleSet *gocondition.RuleSet) bson.M {
 		}
 	}
 
-	filter := bson.M{}
-
-	if len(filterA) > 0 {
+	if len(filterA) > 1 {
 
 		filter["$and"] = filterA
+
+	} else {
+
+		return filterA[0].(bson.M)
 	}
 	return filter
 }
 
 func (pool *MongoPool) buildQueryOr(ruleSet *gocondition.RuleSet) bson.M {
 
+	filter := bson.M{}
+
+	if len(ruleSet.Children) == 0 {
+		return filter
+	}
 	filterA := bson.A{}
 
 	for _, filterItem := range ruleSet.Children {
@@ -516,11 +530,13 @@ func (pool *MongoPool) buildQueryOr(ruleSet *gocondition.RuleSet) bson.M {
 		}
 	}
 
-	filter := bson.M{}
-
-	if len(filterA) > 0 {
+	if len(filterA) > 1 {
 
 		filter["$or"] = filterA
+
+	} else {
+
+		return filterA[0].(bson.M)
 	}
 	return filter
 }
