@@ -384,27 +384,27 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 
 	if filterItem.Operator == "=" {
 
-		return bson.M{filterItem.Field: filterItem.Value}
+		return bson.M{filterItem.Field: filterItem.FieldValue}
 
 	} else if filterItem.Operator == "!=" {
 
 		return bson.M{filterItem.Field: bson.M{
 
-			"$ne": filterItem.Value,
+			"$ne": filterItem.FieldValue,
 		}}
 
 	} else if filterItem.Operator == ">" {
 
 		return bson.M{
 
-			"$gt": filterItem.Value,
+			"$gt": filterItem.FieldValue,
 		}
 
 	} else if filterItem.Operator == "<" {
 
 		return bson.M{
 
-			"$lt": filterItem.Value,
+			"$lt": filterItem.FieldValue,
 		}
 
 	} else if filterItem.Operator == "+=" {
@@ -413,7 +413,7 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 
 			"$or": bson.A{
 				bson.M{filterItem.Field: bson.M{"$exists": false}},
-				bson.M{filterItem.Field: filterItem.Value},
+				bson.M{filterItem.Field: filterItem.FieldValue},
 			},
 		}
 
@@ -425,7 +425,7 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 				bson.M{filterItem.Field: bson.M{"$exists": false}},
 				bson.M{filterItem.Field: bson.M{
 
-					"$lt": filterItem.Value,
+					"$lt": filterItem.FieldValue,
 				}},
 			},
 		}
@@ -438,7 +438,7 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 				bson.M{filterItem.Field: bson.M{"$exists": false}},
 				bson.M{filterItem.Field: bson.M{
 
-					"$gt": filterItem.Value,
+					"$gt": filterItem.FieldValue,
 				}},
 			},
 		}
@@ -458,7 +458,7 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 
 			filterItem.Field: bson.M{
 
-				"$in": filterItem.Value,
+				"$in": filterItem.FieldValue,
 			},
 		}
 	}
