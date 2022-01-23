@@ -490,6 +490,8 @@ func (pool *MongoPool) buildQueryAnd(ruleSet *gocondition.RuleSet) bson.M {
 				filterA = append(filterA, pool.buildQueryOr(ruleSet))
 			}
 			break
+		default:
+			panic(engine.InvalidQuery)
 		}
 	}
 
@@ -524,9 +526,11 @@ func (pool *MongoPool) buildQueryOr(ruleSet *gocondition.RuleSet) bson.M {
 			if ruleSet.IsAnd() {
 				filterA = append(filterA, pool.buildQueryAnd(ruleSet))
 			} else {
-
+				filterA = append(filterA, pool.buildQueryOr(ruleSet))
 			}
 			break
+		default:
+			panic(engine.InvalidQuery)
 		}
 	}
 
