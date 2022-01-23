@@ -395,17 +395,17 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 
 	} else if filterItem.Operator == ">" {
 
-		return bson.M{
+		return bson.M{filterItem.Field: bson.M{
 
 			"$gt": filterItem.FieldValue,
-		}
+		}}
 
 	} else if filterItem.Operator == "<" {
 
-		return bson.M{
+		return bson.M{filterItem.Field: bson.M{
 
 			"$lt": filterItem.FieldValue,
-		}
+		}}
 
 	} else if filterItem.Operator == "+=" {
 
