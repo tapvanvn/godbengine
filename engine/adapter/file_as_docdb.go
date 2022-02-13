@@ -84,6 +84,10 @@ func (db *FileDocDB) DelCollection(collection string) error {
 	return db.fileClient.Delete(path)
 }
 
+func (db *FileDocDB) CreateCollection(collection string) error {
+	return engine.NotImplement
+}
+
 type FileDocDBTransactionItem struct {
 	command    string
 	collection string
