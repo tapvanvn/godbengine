@@ -32,12 +32,12 @@ func TestFile(t *testing.T) {
 		return
 	}
 
-	err = __file_client.Write("/abc", &__content)
+	err = __file_client.Write("/directory/file.txt", &__content)
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	content, err := __file_client.Read("/abc")
+	content, err := __file_client.Read("/directory/file.txt")
 	if err != nil {
 		t.Error(err)
 		return
@@ -46,7 +46,7 @@ func TestFile(t *testing.T) {
 	if str != string(__content) {
 		t.Error()
 	}
-	err = __file_client.Delete("/abc")
+	err = __file_client.Delete("/directory/file.txt")
 	if err != nil {
 		t.Error(err)
 		return
