@@ -400,11 +400,24 @@ func (pool *MongoPool) buildQueryFilter(filterItem *engine.DBFilterItem) bson.M 
 			"$gt": filterItem.FieldValue,
 		}}
 
+	} else if filterItem.Operator == ">=" {
+
+		return bson.M{filterItem.Field: bson.M{
+
+			"$gte": filterItem.FieldValue,
+		}}
+
 	} else if filterItem.Operator == "<" {
 
 		return bson.M{filterItem.Field: bson.M{
 
 			"$lt": filterItem.FieldValue,
+		}}
+	} else if filterItem.Operator == "<=" {
+
+		return bson.M{filterItem.Field: bson.M{
+
+			"$lte": filterItem.FieldValue,
 		}}
 
 	} else if filterItem.Operator == "+=" {
