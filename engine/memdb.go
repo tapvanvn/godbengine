@@ -56,4 +56,6 @@ type MemPool interface {
 
 	//find all key in pattern
 	FindKey(keyPattern string) ([]string, error)
+
+	IsNotExistedError(err error) bool
 }

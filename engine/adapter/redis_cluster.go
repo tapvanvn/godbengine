@@ -254,3 +254,8 @@ func (pool *RedisClusterPool) FindKey(keyPattern string) ([]string, error) {
 	}
 	return keys, nil
 }
+
+func (pool *RedisClusterPool) IsNotExistedError(err error) bool {
+
+	return err == redis.Nil
+}

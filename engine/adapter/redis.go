@@ -263,3 +263,8 @@ func hashByKey(key string) int {
 	}
 	return hash
 }
+
+func (pool *RedisPool) IsNotExistedError(err error) bool {
+
+	return err == redis.Nil
+}

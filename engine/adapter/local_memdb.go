@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 type value struct {
 	isInt64 bool
 }
+
+var LocalMemErrNil = errors.New("localmemdb: nil")
 
 type LocalMemDB struct {
 	storageString map[string]string
@@ -162,7 +165,7 @@ func (memdb *LocalMemDB) Get(key string) (string, error) {
 			return val, nil
 		}
 	}
-	return "", nil
+	return "", LocalMemErrNil
 }
 func (memdb *LocalMemDB) GetInt(key string) (int64, error) {
 	memdb.muxInt64.Lock()
@@ -212,4 +215,9 @@ func (memdb *LocalMemDB) DelShading(key string) error {
 //find all key in pattern
 func (memdb *LocalMemDB) FindKey(keyPattern string) ([]string, error) {
 	return nil, engine.NotImplement
+}
+
+func (pool *LocalMemDB) IsNotExistedError(err error) bool {
+
+	return err == LocalMemErrNil
 }
