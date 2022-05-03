@@ -30,7 +30,12 @@ func (db *FileDocDB) Init(connectionString string) error {
 //Insert a document
 func (db *FileDocDB) Put(collection string, document engine.Document) error {
 
-	path := fmt.Sprintf("/%s/%s.json", collection, document.GetID())
+	return db.PutRaw(collection, document.GetID(), document)
+}
+
+func (db *FileDocDB) PutRaw(collection string, id string, document interface{}) error {
+
+	path := fmt.Sprintf("/%s/%s.json", collection, id)
 
 	content, err := json.Marshal(document)
 

@@ -316,6 +316,11 @@ func (pool *MongoPool) Get(collection string, id string, document interface{}) e
 
 //Put document
 func (pool *MongoPool) Put(collection string, document engine.Document) error {
+
+	return pool.PutRaw(collection, document.GetID(), document)
+}
+
+func (pool *MongoPool) PutRaw(collection string, id string, document interface{}) error {
 	now := time.Now()
 	col := pool.SelectRobin().getCollection(pool.database, collection, true)
 
@@ -327,7 +332,7 @@ func (pool *MongoPool) Put(collection string, document engine.Document) error {
 
 	opts := options.Update().SetUpsert(true)
 
-	filter := bson.D{bson.E{Key: "__id", Value: document.GetID()}}
+	filter := bson.D{bson.E{Key: "__id", Value: id}}
 
 	update := bson.M{
 		"$set": document,
@@ -336,7 +341,7 @@ func (pool *MongoPool) Put(collection string, document engine.Document) error {
 	_, err := col.UpdateOne(ctx, filter, update, opts)
 	if __measurement {
 		delta := time.Now().Sub(now).Nanoseconds()
-		fmt.Printf("mersure docdb put %s.%s %0.2fms\n", collection, document.GetID(), float32(delta)/1_000_000)
+		fmt.Printf("mersure docdb put %s.%s %0.2fms\n", collection, id, float32(delta)/1_000_000)
 	}
 	return err
 }

@@ -33,6 +33,8 @@ type DocumentPool interface {
 
 	Get(collection string, id string, document interface{}) error
 
+	PutRaw(collection string, id string, document interface{}) error
+
 	Del(collection string, id string) error
 
 	IsNoRecordError(error) bool

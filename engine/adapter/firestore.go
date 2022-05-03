@@ -411,19 +411,24 @@ func (pool *FirestorePool) Get(collection string, id string, document interface{
 
 //Put document
 func (pool *FirestorePool) Put(collection string, document engine.Document) error {
+
+	return pool.PutRaw(collection, document.GetID(), document)
+}
+
+func (pool *FirestorePool) PutRaw(collection string, id string, document interface{}) error {
 	now := time.Now()
 	col := pool.First().getCollection(collection)
 	if col == nil {
 		return errors.New("get collection fail")
 	}
 	ctx := context.TODO()
-	_, err := col.Doc(document.GetID()).Set(ctx, document)
+	_, err := col.Doc(id).Set(ctx, document)
 	if err != nil {
 		return err
 	}
 	if __measurement {
 		delta := time.Now().Sub(now).Nanoseconds()
-		fmt.Printf("mersure docdb put %s.%s %0.2fms\n", collection, document.GetID(), float32(delta)/1_000_000)
+		fmt.Printf("mersure docdb put %s.%s %0.2fms\n", collection, id, float32(delta)/1_000_000)
 	}
 	return nil
 }
