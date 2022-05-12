@@ -300,6 +300,10 @@ func (pool *MongoPool) Get(collection string, id string, document interface{}) e
 	result := col.FindOne(ctx, filter, opts)
 
 	if result.Err() != nil {
+		if __measurement {
+			delta := time.Now().Sub(now).Nanoseconds()
+			fmt.Printf("mersure docdb get %s.%s %0.2fms\n", collection, id, float32(delta)/1_000_000)
+		}
 		err := result.Err()
 		if err == mongo.ErrNoDocuments {
 			return engine.NoDocument
