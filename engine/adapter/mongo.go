@@ -778,3 +778,142 @@ func (pool *MongoPool) CreateCollection(collection string) error {
 	ctx := context.Background()
 	return pool.First().client.Database(pool.database).CreateCollection(ctx, collection)
 }
+
+type varyMapInt struct {
+	ID    int64 `bson:"_id"`
+	Count int   `bson:"Count"`
+}
+type varyMapString struct {
+	ID    string `bson:"_id"`
+	Count int    `bson:"Count"`
+}
+
+//MARK:
+func (pool *MongoPool) CollectVaryInt(collection string, field string) (map[string]int, error) {
+	now := time.Now()
+	col := pool.SelectRobin().getCollection(pool.database, collection, true)
+	if col == nil {
+		return nil, errors.New("get collection fail")
+	}
+
+	ctx := context.TODO()
+
+	opts := options.Aggregate()
+
+	groupStage := bson.D{{"$group", bson.D{{"_id", fmt.Sprintf("$%s", field)}, {"Count", bson.D{{"$sum", 1}}}}}}
+
+	showInfoCursor, err := col.Aggregate(ctx, mongo.Pipeline{groupStage}, opts)
+	if err != nil {
+		return nil, err
+	}
+	var results []varyMapInt
+	if err = showInfoCursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	resultMap := map[string]int{}
+	for _, item := range results {
+		resultMap[strconv.FormatInt(item.ID, 10)] = item.Count
+	}
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb collectvary %s(%s) %0.2fms\n", collection, field, float32(delta)/1_000_000)
+	}
+	return resultMap, nil
+}
+
+func (pool *MongoPool) CollectVaryString(collection string, field string) (map[string]int, error) {
+	now := time.Now()
+	col := pool.SelectRobin().getCollection(pool.database, collection, true)
+	if col == nil {
+		return nil, errors.New("get collection fail")
+	}
+
+	ctx := context.TODO()
+
+	opts := options.Aggregate()
+
+	groupStage := bson.D{{"$group", bson.D{{"_id", fmt.Sprintf("$%s", field)}, {"Count", bson.D{{"$sum", 1}}}}}}
+
+	showInfoCursor, err := col.Aggregate(ctx, mongo.Pipeline{groupStage}, opts)
+	if err != nil {
+		return nil, err
+	}
+	var results []varyMapString
+	if err = showInfoCursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	resultMap := map[string]int{}
+	for _, item := range results {
+		resultMap[item.ID] = item.Count
+	}
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb collectvary %s(%s) %0.2fms\n", collection, field, float32(delta)/1_000_000)
+	}
+	return resultMap, nil
+}
+func (pool *MongoPool) CollectVaryQueryInt(query engine.DBQuery, field string) (map[string]int, error) {
+	now := time.Now()
+	col := pool.SelectRobin().getCollection(pool.database, query.Collection, true)
+	if col == nil {
+		return nil, errors.New("get collection fail")
+	}
+
+	ctx := context.TODO()
+
+	opts := options.Aggregate()
+	filter := pool.buildQueryAnd(query.Condition)
+	matchState := bson.D{{"$match", filter}}
+	groupStage := bson.D{{"$group", bson.D{{"_id", fmt.Sprintf("$%s", field)}, {"Count", bson.D{{"$sum", 1}}}}}}
+
+	showInfoCursor, err := col.Aggregate(ctx, mongo.Pipeline{matchState, groupStage}, opts)
+	if err != nil {
+		return nil, err
+	}
+	var results []varyMapInt
+	if err = showInfoCursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	resultMap := map[string]int{}
+	for _, item := range results {
+		resultMap[strconv.FormatInt(item.ID, 10)] = item.Count
+	}
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb collectvary %s(%s) %0.2fms\n", query.Collection, field, float32(delta)/1_000_000)
+	}
+	return resultMap, nil
+}
+
+func (pool *MongoPool) CollectVaryQueryString(query engine.DBQuery, field string) (map[string]int, error) {
+	now := time.Now()
+	col := pool.SelectRobin().getCollection(pool.database, query.Collection, true)
+	if col == nil {
+		return nil, errors.New("get collection fail")
+	}
+
+	ctx := context.TODO()
+
+	opts := options.Aggregate()
+	filter := pool.buildQueryAnd(query.Condition)
+
+	groupStage := bson.D{{"$match", filter}, {"$group", bson.D{{"_id", fmt.Sprintf("$%s", field)}, {"Count", bson.D{{"$sum", 1}}}}}}
+
+	showInfoCursor, err := col.Aggregate(ctx, mongo.Pipeline{groupStage}, opts)
+	if err != nil {
+		return nil, err
+	}
+	var results []varyMapString
+	if err = showInfoCursor.All(ctx, &results); err != nil {
+		return nil, err
+	}
+	resultMap := map[string]int{}
+	for _, item := range results {
+		resultMap[item.ID] = item.Count
+	}
+	if __measurement {
+		delta := time.Now().Sub(now).Nanoseconds()
+		fmt.Printf("mersure docdb collectvary %s(%s) %0.2fms\n", query.Collection, field, float32(delta)/1_000_000)
+	}
+	return resultMap, nil
+}

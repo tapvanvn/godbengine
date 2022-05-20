@@ -604,3 +604,16 @@ func (pool *FirestorePool) CreateCollection(collection string) error {
 	//Firestore auto create collection if is's not existed
 	return nil
 }
+
+func (pool *FirestorePool) CollectVaryInt(collection string, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}
+func (pool *FirestorePool) CollectVaryString(collection string, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}
+func (pool *FirestorePool) CollectVaryQueryInt(query engine.DBQuery, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}
+func (pool *FirestorePool) CollectVaryQueryString(query engine.DBQuery, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}

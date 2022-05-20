@@ -50,4 +50,10 @@ type DocumentPool interface {
 	//MARK: Work with collection
 	CreateCollection(collection string) error
 	DelCollection(collection string) error
+
+	//
+	CollectVaryInt(collection string, field string) (map[string]int, error)
+	CollectVaryString(collection string, field string) (map[string]int, error)
+	CollectVaryQueryInt(query DBQuery, field string) (map[string]int, error)
+	CollectVaryQueryString(query DBQuery, field string) (map[string]int, error)
 }
