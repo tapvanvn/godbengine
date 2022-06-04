@@ -189,3 +189,16 @@ func (db *FileDocDB) GetAllDocumentIDs(collectionName string) ([]string, error) 
 	}
 	return ids, nil
 }
+
+func (pool *FileDocDB) CollectVaryInt(collection string, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}
+func (pool *FileDocDB) CollectVaryString(collection string, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}
+func (pool *FileDocDB) CollectVaryQueryInt(query engine.DBQuery, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}
+func (pool *FileDocDB) CollectVaryQueryString(query engine.DBQuery, field string) (map[string]int, error) {
+	return nil, engine.NotImplement
+}
