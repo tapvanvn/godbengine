@@ -316,7 +316,7 @@ func (result FirestoreQueryResult) GetOne(document interface{}) error {
 type FirestoreTransactionItem struct {
 	command    string
 	collection string
-	document   engine.Document
+	document   interface{}
 	id         string
 }
 
@@ -329,6 +329,10 @@ func (transaction *FirestoreTransaction) Begin() {
 func (transaction *FirestoreTransaction) Put(collection string, document engine.Document) {
 
 	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "put", collection: collection, document: document, id: document.GetID()})
+}
+func (transaction *FirestoreTransaction) PutRaw(collection string, id string, document interface{}) {
+
+	transaction.items = append(transaction.items, FirestoreTransactionItem{command: "put", collection: collection, document: document, id: id})
 }
 
 //Del dbtransaction delete

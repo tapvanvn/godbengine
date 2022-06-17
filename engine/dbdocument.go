@@ -16,6 +16,7 @@ type DBTransaction interface {
 	Begin()
 
 	Put(collection string, document Document)
+	PutRaw(collection string, id string, document interface{})
 
 	Del(collection string, id string)
 

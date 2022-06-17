@@ -32,7 +32,7 @@ type MongoClient struct {
 type MongoTransactionItem struct {
 	command    string
 	collection string
-	document   engine.Document
+	document   interface{}
 	id         string
 }
 
@@ -666,7 +666,13 @@ func (transaction *MongoTransaction) Begin() {
 //Put dbtransaction put
 func (transaction *MongoTransaction) Put(collection string, document engine.Document) {
 
-	transaction.items = append(transaction.items, MongoTransactionItem{command: "put", collection: collection, document: document})
+	transaction.items = append(transaction.items, MongoTransactionItem{command: "put", collection: collection, id: document.GetID(), document: document})
+}
+
+//Put dbtransaction put
+func (transaction *MongoTransaction) PutRaw(collection string, id string, document interface{}) {
+
+	transaction.items = append(transaction.items, MongoTransactionItem{command: "put", collection: collection, id: id, document: document})
 }
 
 //Del dbtransaction delete
@@ -700,7 +706,7 @@ func (transaction *MongoTransaction) Commit() error {
 
 				opts := options.Update().SetUpsert(true)
 
-				filter := bson.D{bson.E{Key: "__id", Value: item.document.GetID()}}
+				filter := bson.D{bson.E{Key: "__id", Value: item.id}}
 
 				update := bson.M{
 					"$set": item.document,

@@ -96,7 +96,7 @@ func (db *FileDocDB) CreateCollection(collection string) error {
 type FileDocDBTransactionItem struct {
 	command    string
 	collection string
-	document   engine.Document
+	document   interface{}
 	id         string
 }
 
@@ -116,7 +116,11 @@ func (transaction *FileDocTransaction) Begin() {
 //Put dbtransaction put
 func (transaction *FileDocTransaction) Put(collection string, document engine.Document) {
 
-	transaction.items = append(transaction.items, FileDocDBTransactionItem{command: "put", collection: collection, document: document})
+	transaction.items = append(transaction.items, FileDocDBTransactionItem{command: "put", collection: collection, id: document.GetID(), document: document})
+}
+func (transaction *FileDocTransaction) PutRaw(collection string, id string, document interface{}) {
+
+	transaction.items = append(transaction.items, FileDocDBTransactionItem{command: "put", collection: collection, id: id, document: document})
 }
 
 //Del dbtransaction delete
@@ -136,7 +140,7 @@ func (transaction *FileDocTransaction) Commit() error {
 
 		if item.command == "put" {
 
-			transaction.db.Put(item.collection, item.document)
+			transaction.db.PutRaw(item.collection, item.id, item.document)
 
 		} else if item.command == "del" {
 
